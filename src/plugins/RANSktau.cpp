@@ -18,11 +18,17 @@ static occa::memory o_mut;
 static occa::memory o_k;
 static occa::memory o_tau;
 
+static occa::memory o_ywd;
+static occa::memory o_ywdgrad;
+
 static occa::kernel computeKernel;
 static occa::kernel limitKernel;
 static occa::kernel mueKernel;
 
+static occa::kernel wallFuncKernel;
+
 static bool setupCalled = 0;
+static bool wfSetupCalled = 0;
 
 static dfloat coeff[] = {
     0.6,       // sigma_k
@@ -39,7 +45,9 @@ static dfloat coeff[] = {
     100.0,     // fb_c2
     0.52,      // alp_inf
     1e-8,      // TINY
-    0          // Pope correction
+    0,         // Pope correction
+    9.0,       // Econ
+    30.0       //yplus
 };
 } // namespace
 
@@ -79,6 +87,10 @@ void RANSktau::buildKernel(occa::properties _kernelInfo)
     kernelInfo["defines/p_tiny"] = coeff[13];
   if (!kernelInfo.get<std::string>("defines/p_pope").size())
     kernelInfo["defines/p_pope"] = coeff[14];
+  if (!kernelInfo.get<std::string>("defines/p_Econ").size())
+    kernelInfo["defines/p_econ"] = coeff[15];
+  if (!kernelInfo.get<std::string>("defines/p_yplus").size())
+    kernelInfo["defines/p_yplus"] = coeff[16];
 
   const int verbose = platform->options.compareArgs("VERBOSE", "TRUE") ? 1 : 0;
 
@@ -91,6 +103,11 @@ void RANSktau::buildKernel(occa::properties _kernelInfo)
 
   int rank = platform->comm.mpiRank;
   const std::string install_dir(getenv("NEKRS_INSTALL_DIR"));
+
+  occa::properties kernelInfoBC = kernelInfo;
+  const std::string bcDataFile = install_dir + "/include/bdry/bcData.h";
+  kernelInfoBC["includes"] += bcDataFile.c_str();
+
   const std::string path = install_dir + "/kernels/plugins/";
   std::string fileName, kernelName;
   const std::string extension = ".okl";
@@ -106,6 +123,10 @@ void RANSktau::buildKernel(occa::properties _kernelInfo)
     kernelName = "mue";
     fileName = path + kernelName + extension;
     mueKernel = platform->device.buildKernel(fileName, kernelInfo, true);
+
+    kernelName = "wallFunc";
+    fileName = path + kernelName + extension;
+    wallFuncKernel = platform->device.buildKernel(fileName, kernelInfoBC, true);
   }
 
   int Nscalar;
@@ -201,6 +222,43 @@ void RANSktau::setup(nrs_t *nrsIn, dfloat mueIn, dfloat rhoIn, int ifld, const d
     cds->o_BFDiag = platform->device.malloc(cds->fieldOffsetSum, sizeof(dfloat));
     platform->linAlg->fill(cds->fieldOffsetSum, 0.0, cds->o_BFDiag);
   }
-
+  
   setupCalled = 1;
+}
+
+void RANSktau::updateWallFunc()
+{
+  mesh_t* mesh = nrs->meshV;
+  cds_t* cds = nrs->cds;
+
+  if(wfSetupCalled == 0){
+    //Store wall-distance and its gradients
+    o_ywd = platform->device.malloc(nrs->fieldOffset,sizeof(dfloat));
+    o_ywd.copyFrom(nrs->o_usrwrk,nrs->fieldOffset*sizeof(dfloat));
+    
+    o_ywdgrad = platform->device.malloc(3*nrs->fieldOffset,sizeof(dfloat));
+    nrs->gradientVolumeKernel(mesh->Nelements,
+			      mesh->o_vgeo,
+			      mesh->o_D,
+			      nrs->fieldOffset,
+			      o_ywd,
+			      o_ywdgrad);
+    wfSetupCalled = 1;
+  }
+  
+  platform->linAlg->fill(3*nrs->fieldOffset,0.0,nrs->o_usrwrk);
+  
+  wallFuncKernel(mesh->Nelements,
+		 nrs->fieldOffset,
+		 rho,
+		 mueLam,
+		 mesh->o_sgeo,
+		 mesh->o_vmapM,
+		 mesh->o_EToB,
+		 nrs->o_EToB,
+		 nrs->o_U,
+		 o_k,
+		 o_tau,
+		 o_ywdgrad,
+		 nrs->o_usrwrk);
 }

@@ -1,0 +1,197 @@
+/*
+
+   The MIT License (MIT)
+
+   Copyright (c) 2017 Tim Warburton, Noel Chalmers, Jesse Chan, Ali Karakus
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in all
+   copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+ */
+#define surfaceTerms(sk,face,i, j)					\
+  {									\
+    struct bcData bc;							\
+    bc.idM = vmapM[sk];							\
+    bc.nx = sgeo[sk * p_Nsgeo + p_NXID];				\
+    bc.ny = sgeo[sk * p_Nsgeo + p_NYID];				\
+    bc.nz = sgeo[sk * p_Nsgeo + p_NZID];				\
+    bc.t1x = sgeo[sk * p_Nsgeo + p_T1XID];				\
+    bc.t1y = sgeo[sk * p_Nsgeo + p_T1YID];				\
+    bc.t1z = sgeo[sk * p_Nsgeo + p_T1ZID];				\
+    bc.t2x = sgeo[sk * p_Nsgeo + p_T2XID];				\
+    bc.t2y = sgeo[sk * p_Nsgeo + p_T2YID];				\
+    bc.t2z = sgeo[sk * p_Nsgeo + p_T2ZID];				\
+    bc.fieldOffset = offset;						\
+    bc.id  = EToBM[face + p_Nfaces * e];				\
+    bc.u  = U[bc.idM + 0 * offset];					\
+    bc.v  = U[bc.idM + 1 * offset];					\
+    bc.w  = U[bc.idM + 2 * offset];					\
+    const dfloat WsJ = sgeo[sk * p_Nsgeo + p_WSJID];			\
+    const dlong bcType = EToB[face + p_Nfaces * e];			\
+    const dfloat kw = tke[bc.idM];					\
+    const dfloat tauw = tau[bc.idM];					\
+    const dfloat ywdx = ywdgrad[bc.idM + 0*offset];			\
+    const dfloat ywdy = ywdgrad[bc.idM + 1*offset];			\
+    const dfloat ywdz = ywdgrad[bc.idM + 2*offset];			\
+    dfloat tw1 = 0.0;							\
+    dfloat tw2 = 0.0;							\
+    dfloat tau_flux = 0.0;						\
+    if(bcType == p_bcTypeSHL) {						\
+      applyWallFunc(&bc,ywdx,ywdy,ywdz,kw,tauw,rho,mueLam,&tw1,&tw2,&tau_flux); \
+    }									\
+    W[bc.idM + 0*offset] += tw1;					\
+    W[bc.idM + 1*offset] += tw2;					\
+    W[bc.idM + 2*offset] += tau_flux;					\
+  }
+
+void applyWallFunc(bcData *bc, 
+		   const dfloat ywdx, 
+		   const dfloat ywdy,
+		   const dfloat ywdz,
+		   const dfloat tke,
+		   const dfloat tau,
+		   const dfloat rho,
+		   const dfloat mueLam,
+		   dfloat *tw1,
+		   dfloat *tw2,
+		   dfloat *tau_flux)
+{
+  const dfloat yplus = p_yplus;
+  const dfloat Econ = p_econ;
+  const dfloat kappa = p_kappa;
+  const dfloat sCmu = sqrt(p_betainf_str);
+  const dfloat Ccon = log(Econ)/kappa;
+
+  //get tangential velocity
+  dfloat unormal = bc->u*bc->nx + bc->v*bc->ny + bc->w*bc->nz;
+  dfloat ut = bc->u - unormal*bc->nx;
+  dfloat vt = bc->v - unormal*bc->ny;
+  dfloat wt = bc->w - unormal*bc->nz;
+
+  //tangential velocity along tangent and bi-tangent
+  dfloat ut1 = ut*bc->t1x + vt*bc->t1y + wt*bc->t1z;
+  dfloat ut2 = ut*bc->t2x + vt*bc->t2y + wt*bc->t2z;
+  dfloat uw = sqrt(ut1*ut1 + ut2*ut2);
+
+  //wall-normal gradient
+  dfloat ydn = ywdx*bc->nx + ywdy*bc->ny + ywdz*bc->nz;
+  
+  dfloat sgnydn = 1.0;
+  if(ydn < 0.0){
+    sgnydn = -1.0;
+  }
+  
+  dfloat uplus = (1./kappa)*log(Econ*yplus);
+
+  //G-M approach
+  dfloat utau1 = uw/uplus;
+  dfloat utau2 = sqrt(sCmu*tke);
+  dfloat utau = max(utau1,utau2);
+
+  //Traction
+  dfloat t1 = (ut1/uplus)*utau*rho;
+  dfloat t2 = (ut2/uplus)*utau*rho;
+  *(tw1) = -t1;
+  *(tw2) = -t2;
+
+  //Flux of tau
+  dfloat veddy = kappa*mueLam*yplus;
+  dfloat factro = p_sigma_tau + mueLam/veddy;
+  dfloat flux_tau = 0.0;
+  if(utau!=0.){
+    flux_tau = tke*tau*kappa*sCmu*factro/utau;
+  }
+  flux_tau = flux_tau*sgnydn;
+  *(tau_flux) = flux_tau;
+}
+
+@kernel void wallFunc(const dlong Nelements,
+		      const dlong offset,
+		      const dfloat rho,
+		      const dfloat mueLam,
+		      @restrict const dfloat* sgeo,
+		      @restrict const dlong* vmapM,
+		      @restrict const int*  EToBM,
+		      @restrict const int*  EToB,
+		      @restrict const dfloat* U,
+		      @restrict const dfloat* tke,
+		      @restrict const dfloat* tau,
+		      @restrict const dfloat* ywdgrad,
+		      @restrict dfloat* W)
+{
+  for(dlong e = 0; e < Nelements; ++e; @outer(0)) {
+    // for all face nodes of all elements
+    // face 0
+    for(int j = 0; j < p_Nq; ++j; @inner(1)) {
+      for(int i = 0; i < p_Nq; ++i; @inner(0)) {
+        const dlong sk0 = e * p_Nfp * p_Nfaces + 0 * p_Nfp + i + j * p_Nq;
+        surfaceTerms(sk0,0,i,j);
+      }
+    }
+
+    @barrier("local");
+        
+    // face 5
+    for(int j = 0; j < p_Nq; ++j; @inner(1))
+      for(int i = 0; i < p_Nq; ++i; @inner(0)) {
+        const dlong sk5 = e * p_Nfp * p_Nfaces + 5 * p_Nfp + i + j * p_Nq;
+        surfaceTerms(sk5,5,i,j);
+      }
+    
+    @barrier("local");
+        
+    // face 1
+    for(int k = 0; k < p_Nq; ++k; @inner(1))
+      for(int i = 0; i < p_Nq; ++i; @inner(0)) {
+        const dlong sk1 = e * p_Nfp * p_Nfaces + 1 * p_Nfp + i + k * p_Nq;
+        surfaceTerms(sk1,1,i,k);
+      }
+    
+    @barrier("local");
+        
+    // face 3
+    for(int k = 0; k < p_Nq; ++k; @inner(1))
+      for(int i = 0; i < p_Nq; ++i; @inner(0)) {
+        const dlong sk3 = e * p_Nfp * p_Nfaces + 3 * p_Nfp + i + k * p_Nq;
+        surfaceTerms(sk3,3,i,k);
+      }
+    
+    @barrier("local");
+        
+    // face 2
+    for(int k = 0; k < p_Nq; ++k; @inner(1))
+      for(int j = 0; j < p_Nq; ++j; @inner(0)) {
+        const dlong sk2 = e * p_Nfp * p_Nfaces + 2 * p_Nfp + j + k * p_Nq;
+        surfaceTerms(sk2,2,j,k);
+      }
+    
+    @barrier("local");
+    
+    // face 4
+    for(int k = 0; k < p_Nq; ++k; @inner(1))
+      for(int j = 0; j < p_Nq; ++j; @inner(0)) {
+        const dlong sk4 = e * p_Nfp * p_Nfaces + 4 * p_Nfp + j + k * p_Nq;
+        surfaceTerms(sk4,4,j,k);
+      }
+    
+    @barrier("local");
+       
+  }
+}
+		      
+#undef surfaceTerms  
