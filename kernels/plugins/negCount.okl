@@ -3,7 +3,6 @@
 		      @ restrict dlong *elem,
 		      dlong *count)
 {
-  *count = 0;
   for (dlong e = 0; e < Nelements; ++e; @outer(0)) {
     elem[e] = 0;
 #pragma unroll p_Nq

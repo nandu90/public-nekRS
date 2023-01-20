@@ -223,7 +223,7 @@ void RANSktau::setup(nrs_t *nrsIn, dfloat mueIn, dfloat rhoIn, int ifld, const d
   double *ywd = (double *) nek::scPtr(1);
   o_ywd = platform->device.malloc(nrs->fieldOffset,sizeof(dfloat));
   o_ywd.copyFrom(ywd,nrs->fieldOffset*sizeof(dfloat));
-  o_scratch = platform->device.malloc(1,sizeof(dlong));
+  o_scratch = platform->device.malloc(sizeof(dlong));
   o_negElem = platform->device.malloc(mesh->Nelements,sizeof(dlong));
   MPI_Allreduce(&mesh->Nelements, &nelgt, 1, MPI_DLONG, MPI_SUM, platform->comm.mpiComm);
 
@@ -232,8 +232,12 @@ void RANSktau::setup(nrs_t *nrsIn, dfloat mueIn, dfloat rhoIn, int ifld, const d
 
 dlong negCount(const dlong N, occa::memory o_a)
 {
-  negCountKernel(N,o_a,o_negElem,o_scratch);
   dlong count = 0;
+  
+  o_scratch.copyFrom(&count);
+
+  negCountKernel(N,o_a,o_negElem,o_scratch);
+
   o_scratch.copyTo(&count);
 
   MPI_Allreduce(MPI_IN_PLACE, &count, 1, MPI_DLONG, MPI_SUM, platform->comm.mpiComm);
