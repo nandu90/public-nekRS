@@ -1,22 +1,19 @@
 @kernel void negCount(const dlong Nelements,
 		      @ restrict const dfloat *a,
-		      @ restrict dlong *elem,
-		      dlong *count)
+		      @ restrict dfloat *elem)
 {
   for (dlong e = 0; e < Nelements; ++e; @outer(0)) {
-    elem[e] = 0;
 #pragma unroll p_Nq
     for (int k = 0; k < p_Nq; ++k) {
       for (int j = 0; j < p_Nq; ++j; @inner(1)) {
         for (int i = 0; i < p_Nq; ++i; @inner(0)) {
 	  const dlong id = e * p_Np + k * p_Nq * p_Nq + j * p_Nq + i;
 	  if(a[id] < 0.0){
-	    elem[e] = 1;
+	    elem[e] = 1.0;
 	  }
 	}
       }
     }
-    if(elem[e] == 1) *count += 1;
     @barrier();
   }
 }

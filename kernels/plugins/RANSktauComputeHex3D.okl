@@ -3,13 +3,14 @@
                                   const dfloat rho,
                                   const dfloat mue,
 				  const dfloat sfac,
-                                  @ restrict const dfloat *vgeo,
+				  @ restrict const dfloat *vgeo,
                                   @ restrict const dfloat *D,
                                   @ restrict const dfloat *K,
                                   @ restrict const dfloat *TAU,
                                   @ restrict const dfloat *STMAG2,
                                   @ restrict const dfloat *OIOJSK,
 				  @ restrict const dfloat *ywd,
+				  @ restrict const dfloat *negel,
                                   @ restrict dfloat *SRCDIAG,
                                   @ restrict dfloat *SRC)
 {
@@ -157,7 +158,9 @@
 	  S_taun = fmin(Scoefn * xt, 4.0 * p_beta0 / 3.0);
 	  const dfloat Scoeft = p_alpinf_str * kk * p_sigma_tau;
 	  const dfloat S_taut = 2.0 * Scoeft * xt;
-	  const dfloat S_tau = (S_taun + S_taut)*sfac;
+	  dfloat S_tau = (S_taun + S_taut)*sfac;
+	  if(negel[e] == 1.0)
+	    S_tau = 0.0;
 	  	  
           dfloat tauSrc = 0.0;
           dfloat tauDiag = 0.0;

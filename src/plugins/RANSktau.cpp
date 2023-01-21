@@ -21,7 +21,6 @@ static occa::memory o_mut;
 static occa::memory o_k;
 static occa::memory o_tau;
 static occa::memory o_ywd;
-static occa::memory o_scratch;
 static occa::memory o_negElem;
   
 static occa::kernel computeKernel;
@@ -167,7 +166,7 @@ void RANSktau::updateSourceTerms()
   
   const dfloat fact = 0.01;
   dfloat sfac = 1.0;
-  if(taumin < -fact*taumax){
+  if(count > 100){
     sfac = 0.0;
   }
 
@@ -178,13 +177,14 @@ void RANSktau::updateSourceTerms()
                 rho,
                 mueLam,
 		sfac,
-                mesh->o_vgeo,
+		mesh->o_vgeo,
                 mesh->o_D,
                 o_k,
                 o_tau,
                 o_SijMag2,
                 o_OiOjSk,
 		o_ywd,
+		o_negElem,
                 o_BFDiag,
                 o_FS);
 }
@@ -223,8 +223,7 @@ void RANSktau::setup(nrs_t *nrsIn, dfloat mueIn, dfloat rhoIn, int ifld, const d
   double *ywd = (double *) nek::scPtr(1);
   o_ywd = platform->device.malloc(nrs->fieldOffset,sizeof(dfloat));
   o_ywd.copyFrom(ywd,nrs->fieldOffset*sizeof(dfloat));
-  o_scratch = platform->device.malloc(sizeof(dlong));
-  o_negElem = platform->device.malloc(mesh->Nelements,sizeof(dlong));
+  o_negElem = platform->device.malloc(mesh->Nelements,sizeof(dfloat));
   MPI_Allreduce(&mesh->Nelements, &nelgt, 1, MPI_DLONG, MPI_SUM, platform->comm.mpiComm);
 
   setupCalled = 1;
@@ -232,15 +231,12 @@ void RANSktau::setup(nrs_t *nrsIn, dfloat mueIn, dfloat rhoIn, int ifld, const d
 
 dlong negCount(const dlong N, occa::memory o_a)
 {
-  dlong count = 0;
-  
-  o_scratch.copyFrom(&count);
+  platform->linAlg->fill(N,0.0,o_negElem);  
 
-  negCountKernel(N,o_a,o_negElem,o_scratch);
+  negCountKernel(N,o_a,o_negElem);
 
-  o_scratch.copyTo(&count);
+  dfloat sum = platform->linAlg->sum(N,o_negElem,platform->comm.mpiComm);
 
-  MPI_Allreduce(MPI_IN_PLACE, &count, 1, MPI_DLONG, MPI_SUM, platform->comm.mpiComm);
-
+  dlong count = int(sum);
   return count;
 }
