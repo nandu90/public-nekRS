@@ -12,8 +12,8 @@
 {
   for (dlong n = 0; n < N; ++n; @tile(p_blockSize, @outer, @inner))
     if (n < N) {
-      const dfloat k = fmax(0.0,K[n]);
-      const dfloat tau = fmax(0.0,TAU[n]);
+      const dfloat k = K[n];
+      const dfloat tau = TAU[n];
       const dfloat mut = rho * p_alpinf_str * k * tau;
 
       MUET[n] = mut;

@@ -1,19 +1,17 @@
 @kernel void RANSktauComputeHex3D(const dlong Nelements,
-                                  const dlong offset,
-                                  const dfloat rho,
-                                  const dfloat mue,
-				  const dfloat sfac,
-                                  @ restrict const dfloat *vgeo,
-                                  @ restrict const dfloat *D,
-                                  @ restrict const dfloat *K,
-                                  @ restrict const dfloat *TAU,
-                                  @ restrict const dfloat *STMAG2,
-                                  @ restrict const dfloat *OIOJSK,
-				  @ restrict const dfloat *ywd,
-                                  @ restrict dfloat *SRCDIAG,
-                                  @ restrict dfloat *SRC)
+                          const dlong offset,
+                          const dfloat rho,
+                          const dfloat mue,
+                          @restrict const dfloat* vgeo,
+                          @restrict const dfloat* D,
+                          @restrict const dfloat* K,
+                          @restrict const dfloat* TAU,
+                          @restrict const dfloat* STMAG2,
+                          @restrict const dfloat* OIOJSK,
+                          @restrict dfloat* SRCDIAG,
+                          @restrict dfloat* SRC)
 {
-  for (dlong e = 0; e < Nelements; ++e; @outer(0)) {
+  for(dlong e = 0; e < Nelements; ++e; @outer(0)) {
     @shared dfloat s_k[p_Nq][p_Nq];
     @shared dfloat s_tau[p_Nq][p_Nq];
     @shared dfloat s_tauSqrt[p_Nq][p_Nq];
@@ -23,40 +21,39 @@
 
     @shared dfloat s_D[p_Nq][p_Nq];
 
-#pragma unroll p_Nq
-    for (int k = 0; k < p_Nq; ++k) {
-      for (int j = 0; j < p_Nq; ++j; @inner(1)) {
-        for (int i = 0; i < p_Nq; ++i; @inner(0)) {
+    #pragma unroll p_Nq
+    for(int k = 0; k < p_Nq; ++k){
+      for(int j = 0; j < p_Nq; ++j; @inner(1)){
+        for(int i = 0; i < p_Nq; ++i; @inner(0)) {
           dlong id = i + j * p_Nq;
-          if (k == 0)
-            s_D[0][id] = D[id];
+          if(k == 0) s_D[0][id] = D[id];
 
           id = e * p_Np + k * p_Nq * p_Nq + j * p_Nq + i;
 
-          const dfloat kn = K[id];
+          const dfloat kn   = K[id];
           const dfloat taun = TAU[id];
 
-          s_k[j][i] = kn;
-          s_tau[j][i] = taun;
+          s_k[j][i]       = kn;
+          s_tau[j][i]     = taun;
           s_tauSqrt[j][i] = sqrt(taun);
-          if (k == 0) {
-#pragma unroll p_Nq
-            for (int l = 0; l < p_Nq; ++l) {
+          if(k == 0){
+            #pragma unroll p_Nq
+            for(int l = 0 ; l < p_Nq; ++l){
               const dlong other_id = e * p_Np + l * p_Nq * p_Nq + j * p_Nq + i;
-              const dfloat lockn = K[other_id];
+              const dfloat lockn   = K[other_id];
               const dfloat loctaun = TAU[other_id];
-              s_kloc[l] = lockn;
-              s_tauloc[l] = loctaun;
+              s_kloc[l]       = lockn;
+              s_tauloc[l]     = loctaun;
               s_tauSqrtloc[l] = sqrt(loctaun);
             }
           }
         }
       }
 
-      @barrier();
+    @barrier();
 
-      for (int j = 0; j < p_Nq; ++j; @inner(1)) {
-        for (int i = 0; i < p_Nq; ++i; @inner(0)) {
+      for(int j = 0; j < p_Nq; ++j; @inner(1)) {
+        for(int i = 0; i < p_Nq; ++i; @inner(0)) {
           const dlong gid = e * p_Np * p_Nvgeo + k * p_Nq * p_Nq + j * p_Nq + i;
           const dfloat drdx = vgeo[gid + p_RXID * p_Np];
           const dfloat drdy = vgeo[gid + p_RYID * p_Np];
@@ -67,7 +64,7 @@
           const dfloat dtdx = vgeo[gid + p_TXID * p_Np];
           const dfloat dtdy = vgeo[gid + p_TYID * p_Np];
           const dfloat dtdz = vgeo[gid + p_TZID * p_Np];
-          const dfloat JW = vgeo[gid + p_JWID * p_Np];
+          const dfloat JW   = vgeo[gid + p_JWID * p_Np];
 
           dfloat dkdr = 0, dkds = 0, dkdt = 0;
           dfloat dtaudr = 0, dtauds = 0, dtaudt = 0;
@@ -104,22 +101,22 @@
           const dfloat dtauSqrtdy = drdy * dtauSqrtdr + dsdy * dtauSqrtds + dtdy * dtauSqrtdt;
           const dfloat dtauSqrtdz = drdz * dtauSqrtdr + dsdz * dtauSqrtds + dtdz * dtauSqrtdt;
 
-          const dfloat xk = -(dkdx * dtaudx + dkdy * dtaudy + dkdz * dtaudz);
-          const dfloat xt = dtaudx * dtaudx + dtaudy * dtaudy + dtaudz * dtaudz;
-          const dfloat xtq = dtauSqrtdx * dtauSqrtdx + dtauSqrtdy * dtauSqrtdy + dtauSqrtdz * dtauSqrtdz;
+          const dfloat xk  = -(dkdx * dtaudx + dkdy * dtaudy + dkdz * dtaudz);
+          const dfloat xt  = dtaudx * dtaudx + dtaudy * dtaudy + dtaudz * dtaudz;
+          const dfloat xtq = dtauSqrtdx * dtauSqrtdx + dtauSqrtdy * dtauSqrtdy + dtauSqrtdz *
+                             dtauSqrtdz;
 
           const dlong id = e * p_Np + k * p_Nq * p_Nq + j * p_Nq + i;
 
           const dfloat stMag2 = STMAG2[id];
           const dfloat OiOjSk = OIOJSK[id];
 
-          const dfloat kk = fmax(0.0,K[id]);
-          const dfloat tau = fmax(0.0,TAU[id]);
+          const dfloat kk  = K[id];
+          const dfloat tau = TAU[id];
 
-          const dfloat mu_t = rho * p_alpinf_str * kk * tau;
+          const dfloat mu_t  = rho * p_alpinf_str * kk * tau;
           dfloat itau = 0;
-          if (tau > 0)
-            itau = 1 / (tau + p_tiny);
+          if(tau > 0) itau = 1 / tau;
 
           dfloat sigd = p_sigd_min;
           dfloat f_beta_str = 1.0;
@@ -129,56 +126,32 @@
             f_beta_str = (1.0 + p_fb_c1st * xk3) / (1.0 + p_fb_c2st * xk3);
           }
 
-	  const dfloat yw = ywd[id];
-	  
           // compute source term for k
           const dfloat Y_k = rho * p_betainf_str * f_beta_str * itau;
-          const dfloat kSrc = fmin(mu_t * stMag2, 10.0 * Y_k * kk);
+          const dfloat kSrc  = mu_t * stMag2;
           const dfloat kDiag = Y_k;
 
           // compute rource term for omega
-          const dfloat x_w = fabs(OiOjSk) * (tau * tau * tau * p_ibetainf_str3);
+          const dfloat x_w = abs(OiOjSk) * (tau * tau * tau * p_ibetainf_str3);
           const dfloat f_b = (p_pope) ? (1.0 + p_fb_c1 * x_w) / (1.0 + p_fb_c2 * x_w) : 1.0;
-	  const dfloat Y_w = -rho * p_beta0 * f_b;
-	  const dfloat S_w0 = -rho * sigd *xk;
-	  const dfloat G_wp = rho * p_alp_inf * tau * stMag2;
-
-	  const dfloat mry = mue / rho / yw;
-	  const dfloat imry = 1. / mry;
-	  const dfloat cr_tau = p_beta0 * yw * imry / 6.0;
-	  dfloat S_taun = 0.0;
-	  dfloat Scoefn = 0.0;
-	  if(tau < cr_tau){
-	    if(yw > 0.0) Scoefn = (12.0 / p_beta0) * mry * mry;
-	  }
-	  else{
-	    Scoefn = 2.0 * mue * itau;
-	  }
-	  S_taun = fmin(Scoefn * xt, 4.0 * p_beta0 / 3.0);
-	  const dfloat Scoeft = p_alpinf_str * kk * p_sigma_tau;
-	  const dfloat S_taut = 2.0 * Scoeft * xt;
-	  const dfloat S_tau = (S_taun + S_taut)*sfac;
-	  	  
-          dfloat tauSrc = 0.0;
-          dfloat tauDiag = 0.0;
+          dfloat tauSrc  = rho * (p_beta0 * f_b - sigd * xk * tau);
+          dfloat tauDiag = rho * tau * p_alp_inf * stMag2 +
+                           8.0 * rho * p_alpinf_str * kk * xtq * p_sigma_tau;
 
           // apply correction
-	  if (tau < p_tiny){
-            tauSrc = -Y_w - S_tau;
-	    tauDiag = G_wp - S_w0;
-	  }
-          else{
-	    tauSrc = -Y_w;
-	    tauDiag = G_wp + S_tau * itau - S_w0;
-	  }
+          const dfloat S_tau = 8.0 * mue * xtq;
+          if (tau <= p_tiny)
+            tauSrc  -= S_tau;
+          else
+            tauDiag += S_tau * itau;
 
-          SRC[id + 0 * offset] = kSrc;
-          SRC[id + 1 * offset] = tauSrc;
+          SRC[id + 0 * offset]     = kSrc;
+          SRC[id + 1 * offset]     = tauSrc;
           SRCDIAG[id + 0 * offset] = kDiag;
           SRCDIAG[id + 1 * offset] = tauDiag;
         }
       }
-      @barrier();
+    @barrier();
     }
   }
 }
