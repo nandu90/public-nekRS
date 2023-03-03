@@ -2,8 +2,7 @@
                                   const dlong offset,
                                   const dfloat rho,
                                   const dfloat mue,
-				  const dfloat sfac,
-                                  @ restrict const dfloat *vgeo,
+				  @ restrict const dfloat *vgeo,
                                   @ restrict const dfloat *D,
                                   @ restrict const dfloat *K,
                                   @ restrict const dfloat *TAU,
@@ -113,8 +112,8 @@
           const dfloat stMag2 = STMAG2[id];
           const dfloat OiOjSk = OIOJSK[id];
 
-          const dfloat kk = fmax(0.0,K[id]);
-          const dfloat tau = fmax(0.0,TAU[id]);
+          const dfloat kk = K[id];
+          const dfloat tau = TAU[id];
 
           const dfloat mu_t = rho * p_alpinf_str * kk * tau;
           dfloat itau = 0;
@@ -157,7 +156,7 @@
 	  S_taun = fmin(Scoefn * xt, 4.0 * p_beta0 / 3.0);
 	  const dfloat Scoeft = p_alpinf_str * kk * p_sigma_tau;
 	  const dfloat S_taut = 2.0 * Scoeft * xt;
-	  const dfloat S_tau = (S_taun + S_taut)*sfac;
+	  const dfloat S_tau = S_taun + S_taut;
 	  	  
           dfloat tauSrc = 0.0;
           dfloat tauDiag = 0.0;
