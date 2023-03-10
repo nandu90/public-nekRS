@@ -142,35 +142,13 @@
 	  const dfloat S_w0 = -rho * sigd *xk;
 	  const dfloat G_wp = rho * p_alp_inf * tau * stMag2;
 
-	  const dfloat mry = mue / rho / yw;
-	  const dfloat imry = 1. / mry;
-	  const dfloat cr_edd = p_crEddFactor * mue;
-	  dfloat S_taun = 0.0;
-	  dfloat Scoefn = 0.0;
-	  if(mu_t < cr_edd){
-	    if(yw > 0.0) Scoefn = (12.0 / p_beta0) * mry * mry;
-	  }
-	  else{
-	    Scoefn = 2.0 * mue * itau;
-	  }
-	  S_taun = fmin(Scoefn * xt, 4.0 * p_beta0 / 3.0);
-	  const dfloat Scoeft = p_alpinf_str * kk * p_sigma_tau;
-	  const dfloat S_taut = 2.0 * Scoeft * xt;
-	  const dfloat S_tau = S_taun + S_taut;
-	  	  
-          dfloat tauSrc = 0.0;
-          dfloat tauDiag = 0.0;
-
-          // apply correction
-	  if (tau < p_tiny){
-            tauSrc = -Y_w - S_tau;
-	    tauDiag = G_wp - S_w0;
-	  }
-          else{
-	    tauSrc = -Y_w;
-	    tauDiag = G_wp + S_tau * itau - S_w0;
-	  }
-
+	  dfloat S_tau = 8.0 * mue * xtq;
+	  S_tau = fmin(S_tau, 4.0 * p_beta0 / 3.0);
+	  const dfloat S_taup = 8.0 * rho * p_alpinf_str * kk * xtq * p_sigma_tau;	  
+	  
+	  const dfloat tauSrc = -Y_w - S_tau;
+	  const dfloat tauDiag = G_wp - S_w0 + S_taup;
+	  
           SRC[id + 0 * offset] = kSrc;
           SRC[id + 1 * offset] = tauSrc;
           SRCDIAG[id + 0 * offset] = kDiag;
