@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 1998 Lawrence Livermore National Security, LLC and other
+ * Copyright 1998-2019 Lawrence Livermore National Security, LLC and other
  * HYPRE Project Developers. See the top-level COPYRIGHT file for details.
  *
  * SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -11,11 +11,10 @@
  *--------------------------------------------------------------------------*/
 
 void *
-hypre_StructKrylovCAlloc( size_t               count,
-                          size_t               elt_size,
-                          HYPRE_MemoryLocation location)
+hypre_StructKrylovCAlloc( HYPRE_Int count,
+                          HYPRE_Int elt_size )
 {
-   return ( (void*) hypre_CTAlloc(char, count * elt_size, location) );
+   return ( (void*) hypre_CTAlloc(char, count * elt_size, HYPRE_MEMORY_HOST) );
 }
 
 /*--------------------------------------------------------------------------
@@ -24,7 +23,7 @@ hypre_StructKrylovCAlloc( size_t               count,
 HYPRE_Int
 hypre_StructKrylovFree( void *ptr )
 {
-   hypre_TFree( ptr, HYPRE_MEMORY_HOST);
+   hypre_Free( ptr , HYPRE_MEMORY_HOST);
 
    return hypre_error_flag;
 }
@@ -35,9 +34,9 @@ hypre_StructKrylovFree( void *ptr )
 void *
 hypre_StructKrylovCreateVector( void *vvector )
 {
-   hypre_StructVector *vector = (hypre_StructVector *)vvector;
+	hypre_StructVector *vector = (hypre_StructVector *)vvector;
    hypre_StructVector *new_vector;
-   HYPRE_Int          *num_ghost = hypre_StructVectorNumGhost(vector);
+   HYPRE_Int          *num_ghost= hypre_StructVectorNumGhost(vector);
 
    new_vector = hypre_StructVectorCreate( hypre_StructVectorComm(vector),
                                           hypre_StructVectorGrid(vector) );
@@ -56,11 +55,11 @@ hypre_StructKrylovCreateVectorArray(HYPRE_Int n, void *vvector )
 {
    hypre_StructVector *vector = (hypre_StructVector *)vvector;
    hypre_StructVector **new_vector;
-   HYPRE_Int          *num_ghost = hypre_StructVectorNumGhost(vector);
+   HYPRE_Int          *num_ghost= hypre_StructVectorNumGhost(vector);
    HYPRE_Int i;
 
    new_vector = hypre_CTAlloc(hypre_StructVector*, n, HYPRE_MEMORY_HOST);
-   for (i = 0; i < n; i++)
+   for (i=0; i < n; i++)
    {
       HYPRE_StructVectorCreate(hypre_StructVectorComm(vector),
                                hypre_StructVectorGrid(vector),
@@ -81,7 +80,7 @@ hypre_StructKrylovDestroyVector( void *vvector )
 {
    hypre_StructVector *vector = (hypre_StructVector *)vvector;
 
-   return ( hypre_StructVectorDestroy( vector ) );
+   return( hypre_StructVectorDestroy( vector ) );
 }
 
 /*--------------------------------------------------------------------------
@@ -94,7 +93,7 @@ hypre_StructKrylovMatvecCreate( void   *A,
    void *matvec_data;
 
    matvec_data = hypre_StructMatvecCreate();
-   hypre_StructMatvecSetup(matvec_data, (hypre_StructMatrix *)A, (hypre_StructVector *)x);
+   hypre_StructMatvecSetup(matvec_data, (hypre_StructMatrix *)A,(hypre_StructVector *)x);
 
    return ( matvec_data );
 }
@@ -131,7 +130,7 @@ hypre_StructKrylovMatvecDestroy( void *matvec_data )
  *--------------------------------------------------------------------------*/
 
 HYPRE_Real
-hypre_StructKrylovInnerProd( void *x,
+hypre_StructKrylovInnerProd( void *x, 
                              void *y )
 {
    return ( hypre_StructInnerProd( (hypre_StructVector *) x,
@@ -143,7 +142,7 @@ hypre_StructKrylovInnerProd( void *x,
  *--------------------------------------------------------------------------*/
 
 HYPRE_Int
-hypre_StructKrylovCopyVector( void *x,
+hypre_StructKrylovCopyVector( void *x, 
                               void *y )
 {
    return ( hypre_StructCopy( (hypre_StructVector *) x,
@@ -205,7 +204,7 @@ hypre_StructKrylovIdentity( void *vdata,
                             void *x     )
 
 {
-   return ( hypre_StructKrylovCopyVector( b, x ) );
+   return( hypre_StructKrylovCopyVector( b, x ) );
 }
 
 /*--------------------------------------------------------------------------
@@ -217,8 +216,8 @@ hypre_StructKrylovCommInfo( void  *A,
                             HYPRE_Int   *num_procs )
 {
    MPI_Comm comm = hypre_StructMatrixComm((hypre_StructMatrix *) A);
-   hypre_MPI_Comm_size(comm, num_procs);
-   hypre_MPI_Comm_rank(comm, my_id);
+   hypre_MPI_Comm_size(comm,num_procs);
+   hypre_MPI_Comm_rank(comm,my_id);
    return hypre_error_flag;
 }
 

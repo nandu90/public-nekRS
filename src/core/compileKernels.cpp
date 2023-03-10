@@ -109,7 +109,7 @@ void compileKernels() {
   }
 
   if (platform->comm.mpiRank == 0)
-    printf("loading kernels (this may take awhile) ...\n");
+    printf("JIT compiling kernels (this may take awhile if they are not in cache) ...\n");
   fflush(stdout);
 
   {

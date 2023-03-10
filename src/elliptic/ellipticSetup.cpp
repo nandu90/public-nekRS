@@ -26,59 +26,57 @@
 
 #include "elliptic.h"
 #include "ellipticPrecon.h"
-#include <string>
 #include "platform.hpp"
 #include "linAlg.hpp"
 
-void checkConfig(elliptic_t* elliptic)
+void checkConfig(elliptic_t *elliptic)
 {
-  mesh_t* mesh = elliptic->mesh;
-  setupAide& options = elliptic->options;
+  mesh_t *mesh = elliptic->mesh;
+  setupAide &options = elliptic->options;
 
   int err = 0;
 
   if (!options.compareArgs("DISCRETIZATION", "CONTINUOUS")) {
-    if(platform->comm.mpiRank == 0)
-      printf("ERROR: Elliptic solver only supports CG\n");
+    if (platform->comm.mpiRank == 0)
+      printf("solver only supports CG\n");
     err++;
-  } 
+  }
 
   if (elliptic->elementType != HEXAHEDRA) {
-    if(platform->comm.mpiRank == 0)
-      printf("ERROR: Elliptic solver only supports HEX elements\n");
+    if (platform->comm.mpiRank == 0)
+      printf("solver only supports HEX elements\n");
     err++;
   }
 
   if (elliptic->blockSolver && options.compareArgs("PRECONDITIONER", "MULTIGRID")) {
-    if(platform->comm.mpiRank == 0)
-      printf("ERROR: Block solver does not support multigrid preconditioner\n");
+    if (platform->comm.mpiRank == 0)
+      printf("Block solver does not support multigrid preconditioner\n");
     err++;
   }
 
-  if (!elliptic->poisson && 
-      options.compareArgs("PRECONDITIONER","MULTIGRID") &&
-      !options.compareArgs("MULTIGRID SMOOTHER","DAMPEDJACOBI")) { 
-    if(platform->comm.mpiRank == 0)
-      printf("ERROR: Non-Poisson type equations require Jacobi multigrid smoother\n");
+  if (!elliptic->poisson && options.compareArgs("PRECONDITIONER", "MULTIGRID") &&
+      !options.compareArgs("MULTIGRID SMOOTHER", "DAMPEDJACOBI")) {
+    if (platform->comm.mpiRank == 0)
+      printf("Non-Poisson type equations require Jacobi multigrid smoother\n");
     err++;
   }
 
-  if (options.compareArgs("PRECONDITIONER","MULTIGRID") &&
+  if (options.compareArgs("PRECONDITIONER", "MULTIGRID") &&
       options.compareArgs("MULTIGRID COARSE SOLVE", "TRUE")) {
     if (elliptic->poisson == 0) {
-      if(platform->comm.mpiRank == 0)
-        printf("ERROR: Multigrid + coarse solve only supported for Poisson type equations\n");
+      if (platform->comm.mpiRank == 0)
+        printf("Multigrid + coarse solve only supported for Poisson type equations\n");
       err++;
     }
   }
 
-  if(elliptic->mesh->ogs == NULL) {
-    if(platform->comm.mpiRank == 0) 
-      printf("ERROR: mesh->ogs == NULL!");
+  if (elliptic->mesh->ogs == NULL) {
+    if (platform->comm.mpiRank == 0)
+      printf("mesh->ogs == NULL!");
     err++;
   }
 
-  { 
+  {
     int found = 0;
     for (int fld = 0; fld < elliptic->Nfields; fld++) {
       for (dlong e = 0; e < mesh->Nelements; e++) {
@@ -91,23 +89,26 @@ void checkConfig(elliptic_t* elliptic)
       }
     }
     MPI_Allreduce(MPI_IN_PLACE, &found, 1, MPI_INT, MPI_MAX, platform->comm.mpiComm);
-    if(found && options.compareArgs("BLOCK SOLVER", "FALSE")) {
-      if(platform->comm.mpiRank == 0) 
+    if (found && options.compareArgs("BLOCK SOLVER", "FALSE")) {
+      if (platform->comm.mpiRank == 0)
         printf("Unaligned BCs require block solver!\n");
-    err++;
+      err++;
     }
   }
 
   nrsCheck(err, platform->comm.mpiComm, EXIT_FAILURE, "", "");
 }
 
-void ellipticSolveSetup(elliptic_t* elliptic)
+void ellipticSolveSetup(elliptic_t *elliptic)
 {
   MPI_Barrier(platform->comm.mpiComm);
   const double tStart = MPI_Wtime();
 
-  nrsCheck(elliptic->name.size() == 0, platform->comm.mpiComm, EXIT_FAILURE,
-           "Empty elliptic solver name!", "");
+  nrsCheck(elliptic->name.size() == 0,
+           platform->comm.mpiComm,
+           EXIT_FAILURE,
+           "Empty elliptic solver name!",
+           "");
 
   elliptic->options.setArgs("DISCRETIZATION", "CONTINUOUS");
 
@@ -115,28 +116,28 @@ void ellipticSolveSetup(elliptic_t* elliptic)
   for (auto &entry : platform->options.keyWordToDataMap) {
     std::string prefix = elliptic->name;
     upperCase(prefix);
-    if (entry.first.find(prefix) != std::string::npos) {
+    if (entry.first.find(prefix) == 0) {
       std::string key = entry.first;
       key.erase(0, prefix.size() + 1);
       elliptic->options.setArgs(key, entry.second);
     }
   }
 
-  if(platform->comm.mpiRank == 0 && platform->verbose) 
+  if (platform->comm.mpiRank == 0 && platform->verbose)
     std::cout << elliptic->options << std::endl;
 
   if (platform->device.mode() == "Serial")
     elliptic->options.setArgs("COARSE SOLVER LOCATION", "CPU");
 
-  setupAide& options = elliptic->options;
-  const int verbose = platform->options.compareArgs("VERBOSE","TRUE") ? 1:0;
+  setupAide &options = elliptic->options;
+  const int verbose = platform->options.compareArgs("VERBOSE", "TRUE") ? 1 : 0;
   const size_t offsetBytes = elliptic->fieldOffset * elliptic->Nfields * sizeof(dfloat);
-
 
   nrsCheck(elliptic->o_wrk.size() < elliptic_t::NScratchFields * offsetBytes,
            platform->comm.mpiComm,
            EXIT_FAILURE,
-           "mempool assigned for elliptic too small!", "");
+           "mempool assigned for elliptic too small!",
+           "");
 
   mesh_t *mesh = elliptic->mesh;
   const dlong Nlocal = mesh->Np * mesh->Nelements;
@@ -153,36 +154,32 @@ void ellipticSolveSetup(elliptic_t* elliptic)
   elliptic->o_EToB = platform->device.malloc(mesh->Nelements * mesh->Nfaces * elliptic->Nfields * sizeof(int),
                                              elliptic->EToB);
 
-  elliptic->allNeumann = 0;
-
   checkConfig(elliptic);
 
-  if(options.compareArgs("SOLVER", "PGMRES")){
+  if (options.compareArgs("SOLVER", "PGMRES")) {
     initializeGmresData(elliptic);
     const std::string sectionIdentifier = std::to_string(elliptic->Nfields) + "-";
     elliptic->gramSchmidtOrthogonalizationKernel =
-      platform->kernels.get(sectionIdentifier + "gramSchmidtOrthogonalization");
-    elliptic->updatePGMRESSolutionKernel =
-      platform->kernels.get(sectionIdentifier + "updatePGMRESSolution");
-    elliptic->fusedResidualAndNormKernel =
-      platform->kernels.get(sectionIdentifier + "fusedResidualAndNorm");
+        platform->kernels.get(sectionIdentifier + "gramSchmidtOrthogonalization");
+    elliptic->updatePGMRESSolutionKernel = platform->kernels.get(sectionIdentifier + "updatePGMRESSolution");
+    elliptic->fusedResidualAndNormKernel = platform->kernels.get(sectionIdentifier + "fusedResidualAndNorm");
   }
 
   mesh->maskKernel = platform->kernels.get("mask");
   mesh->maskPfloatKernel = platform->kernels.get("maskPfloat");
 
-  elliptic->o_p       = elliptic->o_wrk + 0*offsetBytes;
-  elliptic->o_z       = elliptic->o_wrk + 1*offsetBytes; 
-  elliptic->o_Ap      = elliptic->o_wrk + 2*offsetBytes; 
-  elliptic->o_x0      = elliptic->o_wrk + 3*offsetBytes;
-  elliptic->o_rPfloat = elliptic->o_wrk + 4*offsetBytes;
-  elliptic->o_zPfloat = elliptic->o_wrk + 5*offsetBytes; 
+  elliptic->o_p = elliptic->o_wrk + 0 * offsetBytes;
+  elliptic->o_z = elliptic->o_wrk + 1 * offsetBytes;
+  elliptic->o_Ap = elliptic->o_wrk + 2 * offsetBytes;
+  elliptic->o_x0 = elliptic->o_wrk + 3 * offsetBytes;
+  elliptic->o_rPfloat = elliptic->o_wrk + 4 * offsetBytes;
+  elliptic->o_zPfloat = elliptic->o_wrk + 5 * offsetBytes;
 
-  elliptic->tmpNormr = (dfloat*) calloc(Nblocks,sizeof(dfloat));
-  elliptic->o_tmpNormr = platform->device.malloc(Nblocks * sizeof(dfloat),
-                                                 elliptic->tmpNormr);
+  elliptic->tmpNormr = (dfloat *)calloc(Nblocks, sizeof(dfloat));
+  elliptic->o_tmpNormr = platform->device.malloc(Nblocks * sizeof(dfloat), elliptic->tmpNormr);
 
-  if(elliptic->poisson) { 
+  elliptic->allNeumann = 0;
+  if (elliptic->poisson) {
     int allNeumann = 1;
 
     // check based on BC
@@ -191,7 +188,7 @@ void ellipticSolveSetup(elliptic_t* elliptic)
         for (int f = 0; f < mesh->Nfaces; f++) {
           const int offset = fld * mesh->Nelements * mesh->Nfaces;
           const int bc = elliptic->EToB[f + e * mesh->Nfaces + offset];
-          if (bc == DIRICHLET || bc == ZERO_NORMAL || bc == ZERO_TANGENTIAL)
+          if (bc > 0 && bc != NEUMANN)
             allNeumann = 0;
         }
       }
@@ -202,10 +199,8 @@ void ellipticSolveSetup(elliptic_t* elliptic)
       printf("non-trivial nullSpace detected\n");
   }
 
-
-  { //setup an masked gs handle
-    ogs_t *ogs = NULL;
-    if (elliptic->blockSolver) ogs = mesh->ogs;
+  { // setup an masked gs handle
+    ogs_t *ogs = (elliptic->blockSolver) ? mesh->ogs : nullptr;
     ellipticOgs(mesh,
                 elliptic->fieldOffset,
                 elliptic->Nfields,
@@ -222,9 +217,6 @@ void ellipticSolveSetup(elliptic_t* elliptic)
     elliptic->o_invDegree = elliptic->ogs->o_invDegree;
   }
 
-
-  const std::string suffix = "Hex3D";
-
   {
     std::string kernelName;
     const std::string suffix = "Hex3D";
@@ -234,29 +226,27 @@ void ellipticSolveSetup(elliptic_t* elliptic)
     elliptic->ellipticBlockBuildDiagonalKernel = platform->kernels.get(sectionIdentifier + kernelName);
 
     kernelName = "fusedCopyDfloatToPfloat";
-    elliptic->fusedCopyDfloatToPfloatKernel =
-      platform->kernels.get(kernelName);
+    elliptic->fusedCopyDfloatToPfloatKernel = platform->kernels.get(kernelName);
 
     std::string kernelNamePrefix = "";
-    if(elliptic->poisson) kernelNamePrefix += "poisson-";
+    if (elliptic->poisson)
+      kernelNamePrefix += "poisson-";
     kernelNamePrefix += "elliptic";
     if (elliptic->blockSolver)
       kernelNamePrefix += (elliptic->stressForm) ? "Stress" : "Block";
 
     kernelName = "Ax";
     kernelName += "Coeff";
-    if (platform->options.compareArgs("ELEMENT MAP", "TRILINEAR")) kernelName += "Trilinear";
-    kernelName += suffix; 
+    if (platform->options.compareArgs("ELEMENT MAP", "TRILINEAR"))
+      kernelName += "Trilinear";
+    kernelName += suffix;
 
-    elliptic->AxKernel = 
-      platform->kernels.get(kernelNamePrefix + "Partial" + kernelName);
+    elliptic->AxKernel = platform->kernels.get(kernelNamePrefix + "Partial" + kernelName);
 
-    elliptic->updatePCGKernel =
-      platform->kernels.get(sectionIdentifier + "ellipticBlockUpdatePCG");
+    elliptic->updatePCGKernel = platform->kernels.get(sectionIdentifier + "ellipticBlockUpdatePCG");
   }
 
-  auto timeEllipticOperator = [&]()
-  {
+  auto timeEllipticOperator = [&]() {
     const int Nsamples = 10;
     ellipticOperator(elliptic, elliptic->o_p, elliptic->o_Ap, dfloatString);
 
@@ -275,25 +265,30 @@ void ellipticSolveSetup(elliptic_t* elliptic)
   };
 
   oogs_mode oogsMode = OOGS_AUTO;
-  elliptic->oogs = oogs::setup(elliptic->ogs, elliptic->Nfields, elliptic->fieldOffset, ogsDfloat, NULL, oogsMode);
+  elliptic->oogs =
+      oogs::setup(elliptic->ogs, elliptic->Nfields, elliptic->fieldOffset, ogsDfloat, NULL, oogsMode);
   elliptic->oogsAx = elliptic->oogs;
 
-  if(platform->options.compareArgs("GS OVERLAP", "TRUE")) {
+  if (platform->options.compareArgs("GS OVERLAP", "TRUE")) {
     auto nonOverlappedTime = timeEllipticOperator();
-    auto callback = [&]()
-    {
-    ellipticAx(elliptic, mesh->NlocalGatherElements, mesh->o_localGatherElementList,
-               elliptic->o_p, elliptic->o_Ap, dfloatString);
+    auto callback = [&]() {
+      ellipticAx(elliptic,
+                 mesh->NlocalGatherElements,
+                 mesh->o_localGatherElementList,
+                 elliptic->o_p,
+                 elliptic->o_Ap,
+                 dfloatString);
     };
-    elliptic->oogsAx = oogs::setup(elliptic->ogs, elliptic->Nfields, elliptic->fieldOffset, ogsDfloat, callback, oogsMode);
+    elliptic->oogsAx =
+        oogs::setup(elliptic->ogs, elliptic->Nfields, elliptic->fieldOffset, ogsDfloat, callback, oogsMode);
 
     auto overlappedTime = timeEllipticOperator();
-    if(overlappedTime > nonOverlappedTime)
+    if (overlappedTime > nonOverlappedTime)
       elliptic->oogsAx = elliptic->oogs;
 
-    if(platform->comm.mpiRank == 0) {
+    if (platform->comm.mpiRank == 0) {
       printf("testing Ax overlap %.2es %.2es ", nonOverlappedTime, overlappedTime);
-      if(elliptic->oogsAx != elliptic->oogs)
+      if (elliptic->oogsAx != elliptic->oogs)
         printf("(overlap enabled)");
 
       printf("\n");
@@ -302,9 +297,8 @@ void ellipticSolveSetup(elliptic_t* elliptic)
 
   ellipticPreconditionerSetup(elliptic, elliptic->ogs);
 
-  if(options.compareArgs("INITIAL GUESS","PROJECTION") ||
-     options.compareArgs("INITIAL GUESS", "PROJECTION-ACONJ"))
-  {
+  if (options.compareArgs("INITIAL GUESS", "PROJECTION") ||
+      options.compareArgs("INITIAL GUESS", "PROJECTION-ACONJ")) {
     dlong nVecsProject = 8;
     options.getArgs("RESIDUAL PROJECTION VECTORS", nVecsProject);
 
@@ -312,7 +306,7 @@ void ellipticSolveSetup(elliptic_t* elliptic)
     options.getArgs("RESIDUAL PROJECTION START", nStepsStart);
 
     SolutionProjection::ProjectionType type = SolutionProjection::ProjectionType::CLASSIC;
-    if(options.compareArgs("INITIAL GUESS", "PROJECTION-ACONJ"))
+    if (options.compareArgs("INITIAL GUESS", "PROJECTION-ACONJ"))
       type = SolutionProjection::ProjectionType::ACONJ;
     else if (options.compareArgs("INITIAL GUESS", "PROJECTION"))
       type = SolutionProjection::ProjectionType::CLASSIC;
@@ -321,7 +315,8 @@ void ellipticSolveSetup(elliptic_t* elliptic)
   }
 
   MPI_Barrier(platform->comm.mpiComm);
-  if(platform->comm.mpiRank == 0) printf("done (%gs)\n", MPI_Wtime() - tStart);
+  if (platform->comm.mpiRank == 0)
+    printf("done (%gs)\n", MPI_Wtime() - tStart);
   fflush(stdout);
 }
 

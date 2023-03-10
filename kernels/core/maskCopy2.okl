@@ -36,8 +36,7 @@ SOFTWARE.
     if (n < Nmasked) {
       const dlong id = maskIds[n];
       out1[id + offset] = in[id + offset];
-      if (out2)
-        out2[id + offset] = in[id + offset];
+      out2[id + offset] = in[id + offset];
     }
   }
 }

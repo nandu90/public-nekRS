@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 1998 Lawrence Livermore National Security, LLC and other
+ * Copyright 1998-2019 Lawrence Livermore National Security, LLC and other
  * HYPRE Project Developers. See the top-level COPYRIGHT file for details.
  *
  * SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -11,8 +11,8 @@
  *
  * We allow rehashing the data into a larger or smaller table, and thus
  * allow a data item (an integer, but a pointer would be more general)
- * to be stored with each key in the table.  (If we only return the
- * storage location of the key in the table (the implied index), then
+ * to be stored with each key in the table.  (If we only return the 
+ * storage location of the key in the table (the implied index), then 
  * rehashing would change the implied indices.)
  *
  * The modulus function is used as the hash function.
@@ -23,6 +23,7 @@
  *****************************************************************************/
 
 #include <stdlib.h>
+#include <assert.h>
 #include "Common.h"
 #include "Hash.h"
 
@@ -57,14 +58,14 @@ Hash *HashCreate(HYPRE_Int size)
 
 void HashDestroy(Hash *h)
 {
-    hypre_TFree(h->keys,HYPRE_MEMORY_HOST);
-    hypre_TFree(h->table,HYPRE_MEMORY_HOST);
-    hypre_TFree(h->data,HYPRE_MEMORY_HOST);
-    hypre_TFree(h,HYPRE_MEMORY_HOST);
+    free(h->keys);
+    free(h->table);
+    free(h->data);
+    free(h);
 }
 
 /*--------------------------------------------------------------------------
- * HashLookup - Look up the "key" in hash table "h" and return the data
+ * HashLookup - Look up the "key" in hash table "h" and return the data 
  * associated with the key, or return HASH_NOTFOUND.
  *--------------------------------------------------------------------------*/
 
@@ -104,7 +105,7 @@ void HashInsert(Hash *h, HYPRE_Int key, HYPRE_Int data)
     {
         if (h->table[loc] == HASH_EMPTY)
         {
-            hypre_assert(h->num < h->size);
+            assert(h->num < h->size);
 
 	    h->keys[h->num++] = key;
             h->table[loc] = key;

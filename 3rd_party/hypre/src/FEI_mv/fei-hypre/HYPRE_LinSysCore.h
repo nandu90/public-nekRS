@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 1998 Lawrence Livermore National Security, LLC and other
+ * Copyright 1998-2019 Lawrence Livermore National Security, LLC and other
  * HYPRE Project Developers. See the top-level COPYRIGHT file for details.
  *
  * SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include <math.h>
 
 #ifdef NOFEI
@@ -68,12 +69,12 @@ enum HYpreconID {HYIDENTITY,HYDIAGONAL,HYPILUT,HYPARASAILS,HYBOOMERAMG,HYML,
 
 typedef struct 
 {
-   HYPRE_BigInt *EdgeNodeList_;
-   HYPRE_BigInt *NodeNumbers_;
-   HYPRE_Int    numEdges_;
-   HYPRE_Int    numLocalNodes_;
-   HYPRE_Int    numNodes_;
-   HYPRE_Real   *NodalCoord_;
+   int    *EdgeNodeList_;
+   int    *NodeNumbers_;
+   int    numEdges_;
+   int    numLocalNodes_;
+   int    numNodes_;
+   double *NodalCoord_;
 } HYPRE_FEI_AMSData;
 
 // *************************************************************************

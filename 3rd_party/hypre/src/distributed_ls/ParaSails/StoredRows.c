@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 1998 Lawrence Livermore National Security, LLC and other
+ * Copyright 1998-2019 Lawrence Livermore National Security, LLC and other
  * HYPRE Project Developers. See the top-level COPYRIGHT file for details.
  *
  * SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -15,6 +15,7 @@
  *****************************************************************************/
 
 #include <stdlib.h>
+#include <assert.h>
 #include "Common.h"
 #include "Mem.h"
 #include "Matrix.h"
@@ -60,10 +61,10 @@ StoredRows *StoredRowsCreate(Matrix *mat, HYPRE_Int size)
 void StoredRowsDestroy(StoredRows *p)
 {
     MemDestroy(p->mem);
-    hypre_TFree(p->len,HYPRE_MEMORY_HOST);
-    hypre_TFree(p->ind,HYPRE_MEMORY_HOST);
-    hypre_TFree(p->val,HYPRE_MEMORY_HOST);
-    hypre_TFree(p,HYPRE_MEMORY_HOST);
+    free(p->len);
+    free(p->ind);
+    free(p->val);
+    free(p);
 }
 
 /*--------------------------------------------------------------------------
@@ -118,7 +119,7 @@ void StoredRowsPut(StoredRows *p, HYPRE_Int index, HYPRE_Int len, HYPRE_Int *ind
     }
 
     /* check that row has not been put already */
-    hypre_assert(p->len[i] == 0);
+    assert(p->len[i] == 0);
 
     p->len[i] = len;
     p->ind[i] = ind;

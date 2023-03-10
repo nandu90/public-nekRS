@@ -1,7 +1,10 @@
-# Copyright (c) 1998 Lawrence Livermore National Security, LLC and other
+# Copyright 1998-2019 Lawrence Livermore National Security, LLC and other
 # HYPRE Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
+
+
+project(HYPRE_FEI C CXX)
 
 include_directories(fei-hypre)
 
@@ -26,3 +29,6 @@ include_directories(fei-hypre)
 # endif()
 
 add_subdirectory(fei-hypre)
+set(FEI_LIBS ${FEI_LIBS} $<TARGET_OBJECTS:HYPRE_fei>)
+
+set(FEI_LIBS ${FEI_LIBS} PARENT_SCOPE)

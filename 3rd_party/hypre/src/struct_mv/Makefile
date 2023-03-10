@@ -1,4 +1,4 @@
-# Copyright (c) 1998 Lawrence Livermore National Security, LLC and other
+# Copyright 1998-2019 Lawrence Livermore National Security, LLC and other
 # HYPRE Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -17,7 +17,6 @@ C_COMPILE_FLAGS = \
 HEADERS =\
  HYPRE_struct_mv.h\
  _hypre_struct_mv.h\
- _hypre_struct_mv.hpp\
  assumed_part.h\
  box.h\
  box_manager.h\
@@ -45,24 +44,20 @@ FILES =\
  HYPRE_struct_stencil.c\
  HYPRE_struct_vector.c\
  project.c\
- struct_grid.c\
- struct_io.c\
- struct_matrix_mask.c\
- struct_stencil.c
-
-CUFILES =\
  struct_axpy.c\
  struct_communication.c\
  struct_copy.c\
+ struct_grid.c\
  struct_innerprod.c\
+ struct_io.c\
  struct_matrix.c\
+ struct_matrix_mask.c\
  struct_matvec.c\
  struct_scale.c\
+ struct_stencil.c\
  struct_vector.c
 
-COBJS = ${FILES:.c=.o}
-CUOBJS = ${CUFILES:.c=.obj}
-OBJS = ${COBJS} ${CUOBJS}
+OBJS = ${FILES:.c=.o}
 
 SONAME = libHYPRE_struct_mv-${HYPRE_RELEASE_VERSION}${HYPRE_LIB_SUFFIX}
 
@@ -73,7 +68,6 @@ SONAME = libHYPRE_struct_mv-${HYPRE_RELEASE_VERSION}${HYPRE_LIB_SUFFIX}
 all: libHYPRE_struct_mv${HYPRE_LIB_SUFFIX}
 	cp -fR $(srcdir)/HYPRE_*.h $(HYPRE_BUILD_DIR)/include
 	cp -fR $(srcdir)/_hypre_struct_mv.h $(HYPRE_BUILD_DIR)/include
-	cp -fR $(srcdir)/_hypre_struct_mv.hpp $(HYPRE_BUILD_DIR)/include
 #	cp -fR libHYPRE* $(HYPRE_BUILD_DIR)/lib
 
 install: libHYPRE_struct_mv${HYPRE_LIB_SUFFIX}
@@ -82,7 +76,7 @@ install: libHYPRE_struct_mv${HYPRE_LIB_SUFFIX}
 #	cp -fR libHYPRE* $(HYPRE_LIB_INSTALL)
 
 clean:
-	rm -f *.o *.obj libHYPRE*
+	rm -f *.o libHYPRE*
 	rm -rf pchdir tca.map *inslog*
 
 distclean: clean
@@ -99,6 +93,6 @@ libHYPRE_struct_mv.a: ${OBJS}
 libHYPRE_struct_mv.so libHYPRE_struct_mv.dylib: ${OBJS}
 	@echo  "Building $@ ... "
 	${BUILD_CC_SHARED} -o ${SONAME} ${OBJS} ${SHARED_SET_SONAME}${SONAME}
-	ln -s -f ${SONAME} $@
+	ln -s ${SONAME} $@
 
 ${OBJS}: ${HEADERS}

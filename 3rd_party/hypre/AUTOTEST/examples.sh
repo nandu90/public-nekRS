@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (c) 1998 Lawrence Livermore National Security, LLC and other
+# Copyright 1998-2019 Lawrence Livermore National Security, LLC and other
 # HYPRE Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -14,10 +14,9 @@ case $1 in
 
    $0 [-h] {src_dir} [options] [-rt <options for runtest.sh script>]
 
-   where: {src_dir}     is the hypre source directory
-          -<test>       run <test>  (test = default, bigint, maxdim, complex)
-          -spack <dir>  compile and link drivers to spack build
-          -h|-help      prints this usage information and exits
+   where: -h|-help   prints this usage information and exits
+          {src_dir}  is the hypre source directory
+          -<test>    run <test>  (test = default, bigint, maxdim, complex)
 
    This script builds the hypre example codes in {src_dir}/examples and runs the
    example regression tests in test/TEST_examples.
@@ -41,9 +40,6 @@ do
          shift
          break
          ;;
-      -spack)
-         shift; spackdir="$1"; shift
-         ;;
       -*)
          tname=`echo $1 | sed 's/-//'`
          tests="$tests $tname"
@@ -65,17 +61,9 @@ mkdir -p $output_dir
 # Run make in the examples directory
 cd $src_dir/examples
 make clean
-mopt=""
-if [ -n "$spackdir" ]; then
-   mopt="HYPRE_DIR=$spackdir"
-fi
 for tname in $tests
 do
-   if [ "$tname" = "gpu" ]; then
-      make -j "use_cuda=1" $mopt $tname
-   else
-      make $mopt $tname
-   fi
+   make $tname
 done
 
 # Run the examples regression test

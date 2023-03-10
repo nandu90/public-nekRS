@@ -1,6 +1,9 @@
 #include "nrs.hpp"
 #include "bcMap.hpp"
 
+// lower than any other possible Dirichlet value
+static constexpr dfloat TINY = -1e30;
+
 void createZeroNormalMask(nrs_t *nrs, mesh_t *mesh, occa::memory &o_EToB, occa::memory& o_EToBV, occa::memory &o_mask)
 {
   nrs->initializeZeroNormalMaskKernel(mesh->Nlocal, nrs->fieldOffset, o_EToBV, o_mask);
@@ -71,11 +74,7 @@ void applyDirichletVelocity(nrs_t *nrs, double time, occa::memory& o_U,occa::mem
 
   mesh_t *mesh = nrs->meshV;
 
-  platform->linAlg->fill((1 + nrs->NVfields) * nrs->fieldOffset,
-                         -1.0 * std::numeric_limits<dfloat>::max(),
-                         platform->o_mempool.slice6);
-
-  occa::memory o_nullptr;
+  platform->linAlg->fill((1 + nrs->NVfields) * nrs->fieldOffset, TINY, platform->o_mempool.slice0);
 
   for (int sweep = 0; sweep < 2; sweep++) {
     nrs->pressureDirichletBCKernel(mesh->Nelements,
@@ -92,7 +91,7 @@ void applyDirichletVelocity(nrs_t *nrs, double time, occa::memory& o_U,occa::mem
                                    nrs->o_mue,
                                    nrs->o_usrwrk,
                                    o_Ue,
-                                   platform->o_mempool.slice6);
+                                   platform->o_mempool.slice0);
 
     nrs->velocityDirichletBCKernel(mesh->Nelements,
                                    nrs->fieldOffset,
@@ -107,54 +106,65 @@ void applyDirichletVelocity(nrs_t *nrs, double time, occa::memory& o_U,occa::mem
                                    nrs->o_EToB,
                                    nrs->o_rho,
                                    nrs->o_mue,
-                                   nrs->neknek ? nrs->neknek->o_pointMap : o_nullptr,
-                                   nrs->neknek ? nrs->neknek->o_U : o_nullptr,
+                                   nrs->neknek ? nrs->neknek->o_pointMap : o_NULL,
+                                   nrs->neknek ? nrs->neknek->o_U : o_NULL,
                                    nrs->o_usrwrk,
                                    o_U,
-                                   platform->o_mempool.slice7);
+                                   platform->o_mempool.slice1);
 
-    oogs::startFinish(platform->o_mempool.slice6,
-                      1 + nrs->NVfields,
-                      nrs->fieldOffset,
-                      ogsDfloat,
-                      (sweep == 0) ? ogsMax : ogsMin,
-                      nrs->gsh);
+    if (sweep == 0)
+      oogs::startFinish(platform->o_mempool.slice0,
+                        1 + nrs->NVfields,
+                        nrs->fieldOffset,
+                        ogsDfloat,
+                        ogsMax,
+                        nrs->gsh);
+    if (sweep == 1)
+      oogs::startFinish(platform->o_mempool.slice0,
+                        1 + nrs->NVfields,
+                        nrs->fieldOffset,
+                        ogsDfloat,
+                        ogsMin,
+                        nrs->gsh);
   }
 
   if (nrs->pSolver->Nmasked)
     nrs->maskCopyKernel(nrs->pSolver->Nmasked,
                         0,
                         nrs->pSolver->o_maskIds,
-                        platform->o_mempool.slice6,
+                        platform->o_mempool.slice0,
                         o_P);
 
   if (nrs->uvwSolver) {
-    if (nrs->uvwSolver->Nmasked)
+    if (nrs->uvwSolver->Nmasked) {
       nrs->maskCopy2Kernel(nrs->uvwSolver->Nmasked,
                           0 * nrs->fieldOffset,
                           nrs->uvwSolver->o_maskIds,
-                          platform->o_mempool.slice7,
+                          platform->o_mempool.slice1,
                           o_U, o_Ue);
-  }
-  else {
-    if (nrs->uSolver->Nmasked)
+    }
+  } else {
+    if (nrs->uSolver->Nmasked) {
       nrs->maskCopy2Kernel(nrs->uSolver->Nmasked,
                           0 * nrs->fieldOffset,
                           nrs->uSolver->o_maskIds,
-                          platform->o_mempool.slice7,
+                          platform->o_mempool.slice1,
                           o_U, o_Ue);
-    if (nrs->vSolver->Nmasked)
+    }
+    if (nrs->vSolver->Nmasked) {
       nrs->maskCopy2Kernel(nrs->vSolver->Nmasked,
                           1 * nrs->fieldOffset,
                           nrs->vSolver->o_maskIds,
-                          platform->o_mempool.slice7,
+                          platform->o_mempool.slice1,
                           o_U, o_Ue);
-    if (nrs->wSolver->Nmasked)
+    }
+    if (nrs->wSolver->Nmasked) {
       nrs->maskCopy2Kernel(nrs->wSolver->Nmasked,
                           2 * nrs->fieldOffset,
                           nrs->wSolver->o_maskIds,
-                          platform->o_mempool.slice7,
+                          platform->o_mempool.slice1,
                           o_U, o_Ue);
+    }
   }
 }
 
@@ -174,11 +184,8 @@ void applyDirichletScalars(nrs_t *nrs, double time, occa::memory& o_S, occa::mem
     auto o_diff_i = cds->o_diff + cds->fieldOffsetScan[is] * sizeof(dfloat);
     auto o_rho_i = cds->o_rho + cds->fieldOffsetScan[is] * sizeof(dfloat);
 
-    occa::memory o_nullptr;
+    platform->linAlg->fill(cds->fieldOffset[is], TINY, platform->o_mempool.slice0);
 
-    platform->linAlg->fill(cds->fieldOffset[is],
-                           -1.0 * std::numeric_limits<dfloat>::max(),
-                           platform->o_mempool.slice2);
     for (int sweep = 0; sweep < 2; sweep++) {
       cds->dirichletBCKernel(mesh->Nelements,
                              cds->fieldOffset[is],
@@ -194,16 +201,16 @@ void applyDirichletScalars(nrs_t *nrs, double time, occa::memory& o_S, occa::mem
                              cds->o_Ue,
                              o_diff_i,
                              o_rho_i,
-                             cds->neknek ? cds->neknek->o_pointMap : o_nullptr,
-                             cds->neknek ? cds->neknek->o_U : o_nullptr,
-                             cds->neknek ? cds->neknek->o_S : o_nullptr,
+                             cds->neknek ? cds->neknek->o_pointMap : o_NULL,
+                             cds->neknek ? cds->neknek->o_U : o_NULL,
+                             cds->neknek ? cds->neknek->o_S : o_NULL,
                              *(cds->o_usrwrk),
-                             platform->o_mempool.slice2);
+                             platform->o_mempool.slice0);
 
       if (sweep == 0)
-        oogs::startFinish(platform->o_mempool.slice2, 1, cds->fieldOffset[is], ogsDfloat, ogsMax, gsh);
+        oogs::startFinish(platform->o_mempool.slice0, 1, cds->fieldOffset[is], ogsDfloat, ogsMax, gsh);
       if (sweep == 1)
-        oogs::startFinish(platform->o_mempool.slice2, 1, cds->fieldOffset[is], ogsDfloat, ogsMin, gsh);
+        oogs::startFinish(platform->o_mempool.slice0, 1, cds->fieldOffset[is], ogsDfloat, ogsMin, gsh);
     }
     occa::memory o_Si =
         o_S.slice(cds->fieldOffsetScan[is] * sizeof(dfloat), cds->fieldOffset[is] * sizeof(dfloat));
@@ -214,7 +221,7 @@ void applyDirichletScalars(nrs_t *nrs, double time, occa::memory& o_S, occa::mem
       cds->maskCopy2Kernel(cds->solver[is]->Nmasked,
                           0,
                           cds->solver[is]->o_maskIds,
-                          platform->o_mempool.slice2,
+                          platform->o_mempool.slice0,
                           o_Si, o_Si_e);
   }
 }
@@ -226,9 +233,8 @@ void applyDirichletMesh(nrs_t *nrs, double time, occa::memory& o_U, occa::memory
     applyZeroNormalMask(nrs, mesh, nrs->meshSolver->o_EToB, nrs->o_zeroNormalMaskMeshVelocity, o_U);
     applyZeroNormalMask(nrs, mesh, nrs->meshSolver->o_EToB, nrs->o_zeroNormalMaskMeshVelocity, o_Ue);
   }
-  platform->linAlg->fill(nrs->NVfields * nrs->fieldOffset,
-                         -1.0 * std::numeric_limits<dfloat>::max(),
-                         platform->o_mempool.slice3);
+
+  platform->linAlg->fill(nrs->NVfields * nrs->fieldOffset, TINY, platform->o_mempool.slice0);
 
   for (int sweep = 0; sweep < 2; sweep++) {
     mesh->velocityDirichletKernel(mesh->Nelements,
@@ -246,18 +252,18 @@ void applyDirichletMesh(nrs_t *nrs, double time, occa::memory& o_U, occa::memory
                                   nrs->o_meshRho,
                                   nrs->o_meshMue,
                                   nrs->o_usrwrk,
-                                  nrs->o_U,
-                                  platform->o_mempool.slice3);
+                                  o_U,
+                                  platform->o_mempool.slice0);
 
     if (sweep == 0)
-      oogs::startFinish(platform->o_mempool.slice3,
+      oogs::startFinish(platform->o_mempool.slice0,
                         nrs->NVfields,
                         nrs->fieldOffset,
                         ogsDfloat,
                         ogsMax,
                         nrs->gshMesh);
     if (sweep == 1)
-      oogs::startFinish(platform->o_mempool.slice3,
+      oogs::startFinish(platform->o_mempool.slice0,
                         nrs->NVfields,
                         nrs->fieldOffset,
                         ogsDfloat,
@@ -269,7 +275,7 @@ void applyDirichletMesh(nrs_t *nrs, double time, occa::memory& o_U, occa::memory
     nrs->maskCopy2Kernel(nrs->meshSolver->Nmasked,
                         0 * nrs->fieldOffset,
                         nrs->meshSolver->o_maskIds,
-                        platform->o_mempool.slice3,
+                        platform->o_mempool.slice0,
                         o_U, o_Ue);
 }
 

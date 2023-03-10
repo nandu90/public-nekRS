@@ -1,7 +1,9 @@
-!     Copyright (c) 1998 Lawrence Livermore National Security, LLC and other
-!     HYPRE Project Developers. See the top-level COPYRIGHT file for details.
-!
-!     SPDX-License-Identifier: (Apache-2.0 OR MIT)
+/******************************************************************************
+ * Copyright 1998-2019 Lawrence Livermore National Security, LLC and other
+ * HYPRE Project Developers. See the top-level COPYRIGHT file for details.
+ *
+ * SPDX-License-Identifier: (Apache-2.0 OR MIT)
+ ******************************************************************************/
 
       integer HYPRE_ERROR_GENERIC
       integer HYPRE_ERROR_MEMORY
@@ -11,4 +13,3 @@
       parameter (HYPRE_ERROR_MEMORY  = 2)
       parameter (HYPRE_ERROR_ARG     = 4)
       parameter (HYPRE_ERROR_CONV    = 256)
-

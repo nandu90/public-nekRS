@@ -68,11 +68,11 @@ extern "C" {
 
        Parameter adjustments */
     /* Table of constant values */
-     integer c__1 = 1;
-     integer c_n1 = -1;
-     integer c__2 = 2;
-     doublereal c_b18 = 1.;
-     doublereal c_b22 = -1.;
+    static integer c__1 = 1;
+    static integer c_n1 = -1;
+    static integer c__2 = 2;
+    static doublereal c_b18 = 1.;
+    static doublereal c_b22 = -1.;
     
     /* System generated locals */
     address a__1[2];
@@ -81,21 +81,21 @@ extern "C" {
     /* Builtin functions   
        Subroutine */ integer s_cat(char *, char **, integer *, integer *, ftnlen);
     /* Local variables */
-     integer j;
+    static integer j;
     extern logical lsame_(const char *, const char *);
     extern /* Subroutine */ integer dtrmm_(const char *, const char *, const char *, const char *, 
 	    integer *, integer *, doublereal *, doublereal *, integer *, 
 	    doublereal *, integer *), dtrsm_(
 	    const char *, const char *, const char *, const char *, integer *, integer *, doublereal *
 	    , doublereal *, integer *, doublereal *, integer *);
-     logical upper;
+    static logical upper;
     extern /* Subroutine */ integer dtrti2_(const char *, const char *, integer *, doublereal 
 	    *, integer *, integer *);
-     integer jb, nb, nn;
+    static integer jb, nb, nn;
     extern /* Subroutine */ integer xerbla_(const char *, integer *);
     extern integer ilaenv_(integer *, const char *, const char *, integer *, integer *, 
 	    integer *, integer *, ftnlen, ftnlen);
-     logical nounit;
+    static logical nounit;
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 
 

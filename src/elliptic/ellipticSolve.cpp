@@ -118,7 +118,7 @@ void ellipticSolve(elliptic_t* elliptic, occa::memory &o_r, occa::memory &o_x)
       )
       * sqrt(elliptic->resNormFactor); 
 
-    nrsCheck(std::isnan(elliptic->res00Norm), platform->comm.mpiComm, EXIT_FAILURE,
+    nrsCheck(std::isnan(elliptic->res00Norm), MPI_COMM_SELF, EXIT_FAILURE,
              "%s unreasonable res00Norm!\n", name.c_str());
 
     elliptic->solutionProjection->pre(o_r);
@@ -137,7 +137,7 @@ void ellipticSolve(elliptic_t* elliptic, occa::memory &o_r, occa::memory &o_x)
     )
     * sqrt(elliptic->resNormFactor); 
 
-  nrsCheck(std::isnan(elliptic->res0Norm), platform->comm.mpiComm, EXIT_FAILURE,
+  nrsCheck(std::isnan(elliptic->res0Norm), MPI_COMM_SELF, EXIT_FAILURE,
            "%s unreasonable res00Norm!\n", name.c_str());
 
   dfloat tol = 1e-6;

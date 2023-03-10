@@ -109,8 +109,10 @@ platform_t::platform_t(setupAide &_options, MPI_Comm _commg, MPI_Comm _comm)
     }
    
     MPI_Bcast(&tmp, tmpSize, MPI_CHAR, 0, comm.mpiComm);
-    tmpDir = fs::temp_directory_path() / fs::path(tmp);
-    if(getenv("NEKRS_TMP_DIR")) tmpDir = getenv("NEKRS_TMP_DIR");
+    if(getenv("NEKRS_TMP_DIR")) 
+      tmpDir = getenv("NEKRS_TMP_DIR");
+    else
+      tmpDir = fs::temp_directory_path() / fs::path(tmp);
 
     if(rankLocal == 0) { 
       fs::create_directory(tmpDir);

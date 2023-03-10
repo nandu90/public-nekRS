@@ -1,4 +1,4 @@
-# Copyright (c) 1998 Lawrence Livermore National Security, LLC and other
+# Copyright 1998-2019 Lawrence Livermore National Security, LLC and other
 # HYPRE Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -26,7 +26,6 @@ C_COMPILE_FLAGS = \
  -I$(srcdir)/../../utilities\
  -I$(srcdir)/../../multivector\
  -I$(srcdir)/../../krylov\
- -I$(srcdir)/../../parcsr_block_mv\
  -I$(srcdir)/../../parcsr_mv\
  -I$(srcdir)/../../parcsr_ls\
  -I$(srcdir)/../../seq_mv\
@@ -47,7 +46,6 @@ CXX_COMPILE_FLAGS = \
  -I$(srcdir)/../../utilities\
  -I$(srcdir)/../../multivector\
  -I$(srcdir)/../../krylov\
- -I$(srcdir)/../../parcsr_block_mv\
  -I$(srcdir)/../../parcsr_mv\
  -I$(srcdir)/../../parcsr_ls\
  -I$(srcdir)/../../seq_mv\
@@ -199,7 +197,7 @@ libHYPRE_FEI.a: ${OBJS}
 libHYPRE_FEI.so libHYPRE_FEI.dylib: ${OBJS}
 	@echo  "Building $@ ... "
 	${BUILD_CC_SHARED} -o ${SONAME} ${OBJS} ${SHARED_SET_SONAME}${SONAME}
-	ln -s -f ${SONAME} $@
+	ln -s ${SONAME} $@
 
 ${OBJS}: ${HEADERS}
 

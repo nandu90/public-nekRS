@@ -482,11 +482,13 @@ int main(int argc, char** argv)
       std::cout << "initialization took " << elapsedTime << " s" << std::endl;
   }
 
+  int lastStep = nekrs::lastStep(time, tStep, elapsedTime);
+  if (nekrs::endTime() > nekrs::startTime())
+    lastStep = 0;
+
   nekrs::udfExecuteStep(time, tStep, /* outputStep */ 0);
   nekrs::resetTimer("udfExecuteStep");
 
-  int lastStep = nekrs::lastStep(time, tStep, elapsedTime);
-  if (nekrs::endTime() > nekrs::startTime()) lastStep = 0;
   double elapsedStepSum = 0;
 
   double tSolveStepMin = std::numeric_limits<double>::max();

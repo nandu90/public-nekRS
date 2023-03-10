@@ -253,7 +253,7 @@ void registerNrsKernels(occa::properties kernelInfoBC)
     }
 
     kernelName = "extrapolate";
-    fileName = oklpath + "/nrs/" + kernelName + ".okl";
+    fileName = oklpath + "/core/" + kernelName + ".okl";
     platform->kernels.add(section + kernelName, fileName, meshProps);
 
     kernelName = "maskCopy";
@@ -295,7 +295,7 @@ void registerNrsKernels(occa::properties kernelInfoBC)
     fileName = oklpath + "/core/" + kernelName + ".okl";
     platform->kernels.add(section + kernelName, fileName, kernelInfo);
     kernelName = "setEllipticCoeffPressure";
-    fileName = oklpath + "/core/" + kernelName + ".okl";
+    fileName = oklpath + "/nrs/" + kernelName + ".okl";
     platform->kernels.add(section + kernelName, fileName, kernelInfo);
   }
 }

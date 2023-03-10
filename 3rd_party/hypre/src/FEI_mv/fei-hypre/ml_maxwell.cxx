@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 1998 Lawrence Livermore National Security, LLC and other
+ * Copyright 1998-2019 Lawrence Livermore National Security, LLC and other
  * HYPRE Project Developers. See the top-level COPYRIGHT file for details.
  *
  * SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 
 //**************************************************************************
 // HYPRE includes
@@ -35,12 +36,12 @@
 //---------------------------------------------------------------------------
 
 void fei_hypre_test(int, char **);
-void hypre_read_matrix(double **val, int **ia, int **ja, int *N, int *M,
+void hypre_read_matrix(double **val, int **ia, int **ja, int *N, int *M, 
                        char *matfile);
 void hypre_read_rhs(double **val, int *N, char *rhsfile);
 
 //***************************************************************************
-// main program
+// main program 
 //***************************************************************************
 
 int main(int argc, char *argv[])
@@ -49,7 +50,7 @@ int main(int argc, char *argv[])
 }
 
 //***************************************************************************
-// a test program
+// a test program 
 //***************************************************************************
 
 void fei_hypre_test(int argc, char *argv[])
@@ -80,7 +81,7 @@ void fei_hypre_test(int argc, char *argv[])
     H.createMatricesAndVectors(nrows, 1, nrows);
     rowLengths = new int[nrows];
     colIndices = new int*[nrows];
-    for (i = 0; i < nrows; i++)
+    for (i = 0; i < nrows; i++) 
     {
        ncnt = ia[i+1] - ia[i];
        rowLengths[i] = ncnt;
@@ -113,7 +114,7 @@ void fei_hypre_test(int argc, char *argv[])
     G.createMatricesAndVectors(nrows, 1, nrows);
     rowLengths = new int[nrows];
     colIndices = new int*[nrows];
-    for (i = 0; i < nrows; i++)
+    for (i = 0; i < nrows; i++) 
     {
        ncnt = ia[i+1] - ia[i];
        rowLengths[i] = ncnt;
@@ -141,9 +142,9 @@ void fei_hypre_test(int argc, char *argv[])
     data.setTypeName(tname);
     H.copyInMatrix(1.0, data);
     G.HYA_ = NULL;
-
+    
     //------------------------------------------------------------------
-    // load the right hand side
+    // load the right hand side 
     //------------------------------------------------------------------
 
     hypre_read_rhs(&rhs, &i, "rhs.ij");
@@ -190,7 +191,7 @@ void fei_hypre_test(int argc, char *argv[])
     delete [] sol;
 
     //------------------------------------------------------------------
-    // clean up
+    // clean up 
     //------------------------------------------------------------------
 
     MPI_Finalize();
@@ -203,7 +204,7 @@ void fei_hypre_test(int argc, char *argv[])
 #endif
 
 //***************************************************************************
-// read a matrix
+// read a matrix 
 //***************************************************************************
 
 void hypre_read_matrix(double **val, int **ia, int **ja, int *N, int *M,
@@ -213,7 +214,7 @@ void hypre_read_matrix(double **val, int **ia, int **ja, int *N, int *M,
     int    *mat_ia, *mat_ja;
     double *mat_a, value;
     FILE   *fp;
-
+                                                                                
     /*------------------------------------------------------------------*/
     /* read matrix file                                                 */
     /*------------------------------------------------------------------*/
@@ -223,14 +224,14 @@ void hypre_read_matrix(double **val, int **ia, int **ja, int *N, int *M,
     if (fp == NULL)
     {
        printf("File not found = %s \n", matfile);
-       exit(1);
+       exit(1); 
     }
     fscanf(fp, "%d %d %d", &nnz, &nrows, &ncols);
     mat_ia = new int[nrows+1];
     mat_ja = new int[nnz];
     mat_a  = new double[nnz];
     mat_ia[0] = 0;
-
+                                                                                
     curr_row = 0;
     icount   = 0;
     for (i = 0; i < nnz; i++)
@@ -267,7 +268,7 @@ void hypre_read_rhs(double **val, int *N, char *rhsfile)
     int    i, nrows, rowindex;
     double *rhs, value;
     FILE   *fp;
-
+                                                                                
     /*------------------------------------------------------------------*/
     /* read matrix file                                                 */
     /*------------------------------------------------------------------*/
@@ -282,7 +283,7 @@ void hypre_read_rhs(double **val, int *N, char *rhsfile)
     }
     fscanf(fp, "%d", &nrows);
     rhs = new double[nrows];
-
+                                                                                
     for (i = 0; i < nrows; i++)
     {
        fscanf(fp, "%d %lg", &rowindex, &value);

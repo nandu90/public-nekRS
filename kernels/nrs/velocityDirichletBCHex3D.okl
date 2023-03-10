@@ -23,7 +23,6 @@
    SOFTWARE.
 
  */
-// RHS contributions for continuous solver
 
 @kernel void velocityDirichletBCHex3D(const dlong Nelements,
                                       const dlong offset,

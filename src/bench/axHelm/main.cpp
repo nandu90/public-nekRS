@@ -113,6 +113,9 @@ int main(int argc, char** argv)
     exit(1); 
   }
 
+  if(stressForm)
+    Ndim = 3;
+
   if(Ng < 0) Ng = N; 
   Nelements = std::max(1, Nelements/size);
   constexpr int p_Nggeo {7};

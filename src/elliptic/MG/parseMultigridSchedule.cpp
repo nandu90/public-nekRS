@@ -13,7 +13,7 @@ parseMultigridSchedule(const std::string &schedule, setupAide& options, int defa
 
   std::vector<int> levels;
 
-  const auto INVALID = -std::numeric_limits<int>::max();
+  const auto INVALID = std::numeric_limits<int>::lowest();
   int prevOrder = std::numeric_limits<int>::max();
   int minOrder = std::numeric_limits<int>::max();
 

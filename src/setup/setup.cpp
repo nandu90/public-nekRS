@@ -111,8 +111,10 @@ void nrsSetup(MPI_Comm comm, setupAide &options, nrs_t *nrs)
   platform->options.getArgs("ELEMENT TYPE", nrs->elementType);
 
   {
+#if 1
     if (platform->device.mode() == "Serial")
       platform->options.setArgs("GS OVERLAP", "FALSE");
+#endif
 
     if (platform->comm.mpiCommSize == 1)
       platform->options.setArgs("GS OVERLAP", "FALSE");

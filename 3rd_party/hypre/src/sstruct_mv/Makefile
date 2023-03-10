@@ -1,4 +1,4 @@
-# Copyright (c) 1998 Lawrence Livermore National Security, LLC and other
+# Copyright 1998-2019 Lawrence Livermore National Security, LLC and other
 # HYPRE Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -43,17 +43,13 @@ FILES =\
  sstruct_graph.c\
  sstruct_grid.c\
  sstruct_innerprod.c\
+ sstruct_matrix.c\
  sstruct_matvec.c\
  sstruct_scale.c\
- sstruct_stencil.c
-
-CUFILES =\
- sstruct_matrix.c\
+ sstruct_stencil.c\
  sstruct_vector.c
 
-COBJS = ${FILES:.c=.o}
-CUOBJS = ${CUFILES:.c=.obj}
-OBJS = ${COBJS} ${CUOBJS}
+OBJS = ${FILES:.c=.o}
 
 SONAME = libHYPRE_sstruct_mv-${HYPRE_RELEASE_VERSION}${HYPRE_LIB_SUFFIX}
 
@@ -72,7 +68,7 @@ install: libHYPRE_sstruct_mv${HYPRE_LIB_SUFFIX}
 #	cp -fR libHYPRE* $(HYPRE_LIB_INSTALL)
 
 clean:
-	rm -f *.o *.obj libHYPRE*
+	rm -f *.o libHYPRE*
 	rm -rf pchdir tca.map *inslog*
 
 distclean: clean
@@ -89,6 +85,6 @@ libHYPRE_sstruct_mv.a: ${OBJS}
 libHYPRE_sstruct_mv.so libHYPRE_sstruct_mv.dylib: ${OBJS}
 	@echo  "Building $@ ... "
 	${BUILD_CC_SHARED} -o ${SONAME} ${OBJS} ${SHARED_SET_SONAME}${SONAME}
-	ln -s -f ${SONAME} $@
+	ln -s ${SONAME} $@
 
 ${OBJS}: ${HEADERS}

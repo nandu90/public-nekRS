@@ -67,7 +67,7 @@ extern "C" {
     /* System generated locals */
     doublereal d__1, d__2;
     /* Local variables */
-     doublereal fhmn, fhmx, c__, fa, ga, ha, as, at, au;
+    static doublereal fhmn, fhmx, c__, fa, ga, ha, as, at, au;
 
 
 

@@ -22,13 +22,13 @@ extern "C" {
 
 /* Table of constant values */
 
-/* integer c__1 = 1;*/
+/*static integer c__1 = 1;*/
 
 /* Subroutine */ integer xerbla_(const char *srname, integer *info)
 {
     /* Format strings */
     /*
-     char fmt_9999[] = "(\002 ** On entry to \002,a,\002 parameter num"
+    static char fmt_9999[] = "(\002 ** On entry to \002,a,\002 parameter num"
             "ber \002,i2,\002 had \002,\002an illegal value\002)";
     */
 
@@ -37,7 +37,7 @@ extern "C" {
     /* Subroutine */ integer s_stop(char *, ftnlen);
 
     /* Fortran I/O blocks */
-    /* cilist io___1 = { 0, 6, 0, fmt_9999, 0 };*/
+    /*static cilist io___1 = { 0, 6, 0, fmt_9999, 0 };*/
 
 
 

@@ -37,7 +37,7 @@ benchmarkKernel(std::function<occa::kernel(int kernelVariant)> kernelBuilder,
 
     if(platform->options.compareArgs("BUILD ONLY", "FALSE")){
       // warmup
-      double elapsed = run(10, kernelRunner, candidateKernel);
+      double elapsed = run(1, kernelRunner, candidateKernel);
 
       double candidateKernelTiming = run(Ntests, kernelRunner, candidateKernel);
       double tMax;
@@ -86,10 +86,10 @@ benchmarkKernel(std::function<occa::kernel(int kernelVariant)> kernelBuilder,
     if(platform->options.compareArgs("BUILD ONLY", "FALSE")){
 
       // warmup
-      double elapsed = run(10, kernelRunner, candidateKernel);
+      double elapsed = run(1, kernelRunner, candidateKernel);
 
       // evaluation
-      int Ntests = static_cast<int>(targetTime / elapsed);
+      int Ntests = std::max(1, static_cast<int>(targetTime / elapsed));
       MPI_Allreduce(MPI_IN_PLACE, &Ntests, 1, MPI_INT, MPI_MAX, platform->comm.mpiComm);
 
       double candidateKernelTiming = run(Ntests, kernelRunner, candidateKernel);

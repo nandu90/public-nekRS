@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 1998 Lawrence Livermore National Security, LLC and other
+ * Copyright 1998-2019 Lawrence Livermore National Security, LLC and other
  * HYPRE Project Developers. See the top-level COPYRIGHT file for details.
  *
  * SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 
 //**************************************************************************
 // HYPRE includes
@@ -37,14 +38,14 @@ void fei_hypre_domaindecomposition(int, char **);
 void fei_hypre_test(int, char **);
 
 extern "C" {
-int  HYPRE_LSI_DDAMGSolve(HYPRE_ParCSRMatrix A_csr, HYPRE_ParVector x_csr,
+int  HYPRE_LSI_DDAMGSolve(HYPRE_ParCSRMatrix A_csr, HYPRE_ParVector x_csr, 
                          HYPRE_ParVector b_csr );
-void HYPRE_LSI_Get_IJAMatrixFromFile(double **val, int **ia,
+void HYPRE_LSI_Get_IJAMatrixFromFile(double **val, int **ia, 
      int **ja, int *N, double **rhs, char *matfile, char *rhsfile);
 }
 
 //***************************************************************************
-// main program
+// main program 
 //***************************************************************************
 
 main(int argc, char *argv[])
@@ -53,7 +54,7 @@ main(int argc, char *argv[])
 }
 
 //***************************************************************************
-// a test program
+// a test program 
 //***************************************************************************
 
 void fei_hypre_test(int argc, char *argv[])
@@ -125,7 +126,7 @@ void fei_hypre_test(int argc, char *argv[])
 
     rowLengths = new int[local_nrows];
     colIndices = new int*[local_nrows];
-    for ( i = mybegin; i < myend+1; i++ )
+    for ( i = mybegin; i < myend+1; i++ ) 
     {
        ncnt = ia[i+1] - ia[i];
        rowLengths[i-mybegin] = ncnt;
@@ -141,7 +142,7 @@ void fei_hypre_test(int argc, char *argv[])
     delete [] rowLengths;
 
     //------------------------------------------------------------------
-    // load the matrix
+    // load the matrix 
     //------------------------------------------------------------------
 
     for ( i = mybegin; i <= myend; i++ ) {
@@ -153,12 +154,12 @@ void fei_hypre_test(int argc, char *argv[])
     free( ia );
     free( ja );
     free( val );
-
+    
     //------------------------------------------------------------------
-    // load the right hand side
+    // load the right hand side 
     //------------------------------------------------------------------
 
-    for ( i = mybegin; i <= myend; i++ )
+    for ( i = mybegin; i <= myend; i++ ) 
     {
        index = i;
        H.sumIntoRHSVector(1, &rhs[i], &index);
@@ -255,20 +256,20 @@ void fei_hypre_test(int argc, char *argv[])
     for ( i = H.localStartRow_; i <= H.localEndRow_; i++ )
     {
        H.putInitialGuess(&i, &ddata, 1);
-    }
+    } 
     H.launchSolver(status, iterations);
     ddata = 0.0;
     for ( i = H.localStartRow_; i <= H.localEndRow_; i++ )
     {
        H.putInitialGuess(&i, &ddata, 1);
-    }
+    } 
     H.launchSolver(status, iterations);
 */
 
     if ( status != 1 )
     {
        printf("%4d : HYPRE_LinSysCore : solve unsuccessful.\n", my_rank);
-    }
+    } 
     else if ( my_rank == 0 )
     {
        printf("HYPRE_LinSysCore : solve successful.\n", my_rank);
@@ -286,7 +287,7 @@ void fei_hypre_test(int argc, char *argv[])
     }
 
     //------------------------------------------------------------------
-    // clean up
+    // clean up 
     //------------------------------------------------------------------
 
     MPI_Finalize();
@@ -377,7 +378,7 @@ void fei_hypre_domaindecomposition(int argc, char *argv[])
 
     rowLengths = new int[local_nrows];
     colIndices = new int*[local_nrows];
-    for ( i = myBegin; i < myEnd+1; i++ )
+    for ( i = myBegin; i < myEnd+1; i++ ) 
     {
        ncnt = ia[i+1] - ia[i];
        rowLengths[i-myBegin] = ncnt;
@@ -392,7 +393,7 @@ void fei_hypre_domaindecomposition(int argc, char *argv[])
     delete [] colIndices;
     delete [] rowLengths;
 
-    for ( i = myBegin; i <= myEnd; i++ )
+    for ( i = myBegin; i <= myEnd; i++ ) 
     {
        ncnt = ia[i+1] - ia[i];
        index = i + 1;
@@ -402,12 +403,12 @@ void fei_hypre_domaindecomposition(int argc, char *argv[])
     free( ia );
     free( ja );
     free( val );
-
+    
     //******************************************************************
-    // load the right hand side
+    // load the right hand side 
     //------------------------------------------------------------------
 
-    for ( i = myBegin; i <= myEnd; i++ )
+    for ( i = myBegin; i <= myEnd; i++ ) 
     {
        index = i + 1;
        H.sumIntoRHSVector(1, &rhs[i], &index);
@@ -429,7 +430,7 @@ void fei_hypre_domaindecomposition(int argc, char *argv[])
     //------------------------------------------------------------------
 
     HYPRE_LSI_DDAMGSolve(A_csr,x_csr,b_csr);
-
+ 
     MPI_Finalize();
 }
 

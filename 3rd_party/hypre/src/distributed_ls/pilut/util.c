@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 1998 Lawrence Livermore National Security, LLC and other
+ * Copyright 1998-2019 Lawrence Livermore National Security, LLC and other
  * HYPRE Project Developers. See the top-level COPYRIGHT file for details.
  *
  * SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -28,15 +28,15 @@ HYPRE_Int hypre_ExtractMinLR( hypre_PilutSolverGlobals *globals )
   HYPRE_Int i, j=0 ;
 
   for (i=1; i<lastlr; i++) {
-    if (hypre_lr[i] < hypre_lr[j])
+    if (lr[i] < lr[j])
       j = i;
   }
-  i = hypre_lr[j];
+  i = lr[j];
 
   /* Remove it */
   lastlr-- ;
   if (j < lastlr) 
-    hypre_lr[j] = hypre_lr[lastlr];
+    lr[j] = lr[lastlr];
 
   return i;
 }

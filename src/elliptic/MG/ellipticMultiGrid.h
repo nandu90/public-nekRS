@@ -42,6 +42,7 @@ enum class SmootherType
 };
 enum class ChebyshevSmootherType
 {  
+  NONE,
   JACOBI,
   ASM,
   RAS,
@@ -67,7 +68,7 @@ public:
 
   //smoothing params
   SmootherType smootherType;
-  ChebyshevSmootherType chebySmootherType;
+  ChebyshevSmootherType chebySmootherType = ChebyshevSmootherType::NONE;
 
   dfloat lambda1, lambda0;
   dfloat maxEig;
@@ -99,9 +100,12 @@ public:
 
   //local patch data
   occa::memory o_invAP, o_patchesIndex, o_invDegreeAP;
+  void* ogs;
+  void* ogsOverlap;
+
   void* ogsExt;
   void* ogsExtOverlap;
-  void* ogs;
+
   void build(
     elliptic_t* pSolver);
   void generate_weights();

@@ -86,30 +86,30 @@ extern "C" {
 
        Parameter adjustments */
     /* Table of constant values */
-     integer c__1 = 1;
-     integer c_n1 = -1;
-     integer c__3 = 3;
-     integer c__2 = 2;
+    static integer c__1 = 1;
+    static integer c_n1 = -1;
+    static integer c__3 = 3;
+    static integer c__2 = 2;
     
     /* System generated locals */
     integer a_dim1, a_offset, i__1, i__2, i__3, i__4;
     /* Local variables */
-     integer i__, k, nbmin, iinfo;
+    static integer i__, k, nbmin, iinfo;
     extern /* Subroutine */ integer dgelq2_(integer *, integer *, doublereal *, 
 	    integer *, doublereal *, doublereal *, integer *);
-     integer ib, nb;
+    static integer ib, nb;
     extern /* Subroutine */ integer dlarfb_(const char *,const char *,const char *,const char *, 
 	    integer *, integer *, integer *, doublereal *, integer *, 
 	    doublereal *, integer *, doublereal *, integer *, doublereal *, 
 	    integer *);
-     integer nx;
+    static integer nx;
     extern /* Subroutine */ integer dlarft_(const char *,const char *, integer *, integer *, 
 	    doublereal *, integer *, doublereal *, doublereal *, integer *), xerbla_(const char *, integer *);
     extern integer ilaenv_(integer *,const char *,const char *, integer *, integer *, 
 	    integer *, integer *, ftnlen, ftnlen);
-     integer ldwork, lwkopt;
-     logical lquery;
-     integer iws;
+    static integer ldwork, lwkopt;
+    static logical lquery;
+    static integer iws;
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 
 

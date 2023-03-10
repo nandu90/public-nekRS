@@ -1,4 +1,4 @@
-# Copyright (c) 1998 Lawrence Livermore National Security, LLC and other
+# Copyright 1998-2019 Lawrence Livermore National Security, LLC and other
 # HYPRE Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
@@ -62,8 +62,6 @@ set(HYPRE_fei_SRCS
   HYPRE_fei_vector.cxx 
 )
 
-install (FILES ${HYPRE_fei_HEADERS} DESTINATION include)
+add_library(HYPRE_fei OBJECT ${HYPRE_fei_SRCS})
 
-target_sources(${PROJECT_NAME}
-  PRIVATE ${HYPRE_fei_SRCS}
-)
+install (FILES ${HYPRE_fei_HEADERS} DESTINATION include)

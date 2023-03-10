@@ -22,11 +22,11 @@ extern "C" {
     doublereal d__1, d__2;
 
     /* Local variables */
-     doublereal emin, temp, d__;
-     integer j4;
+    static doublereal emin, temp, d__;
+    static integer j4;
     extern doublereal dlamch_(const char *);
-     doublereal safmin;
-     integer j4p2;
+    static doublereal safmin;
+    static integer j4p2;
 
 
 /*  -- LAPACK auxiliary routine (version 3.0) --   

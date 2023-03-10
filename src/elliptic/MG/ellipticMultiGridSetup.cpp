@@ -97,6 +97,9 @@ void ellipticMultiGridSetup(elliptic_t *elliptic_, precon_t *precon_)
 
   auto autoOverlap = [&](elliptic_t* elliptic)
   {
+    if (!options.compareArgs("MULTIGRID SMOOTHER","CHEBYSHEV"))
+      return;
+
     auto timeOperator = [&]()
     {
       const int Nsamples = 10;

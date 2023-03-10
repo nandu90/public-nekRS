@@ -13,9 +13,21 @@ extern "C" {
 
 #include "gslib.h"
 
+#define MPI_CHECK(x)                                                           \
+  do {                                                                         \
+    int __ret = (x);                                                           \
+    if (MPI_SUCCESS != __ret) {                                                \
+      fprintf(stderr, "(%s:%d) ERROR: MPI call returned error code %d",        \
+              __FILE__, __LINE__, __ret);                                      \
+      MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);                                 \
+    }                                                                          \
+  } while (0)
+
+
 // hardwired for now
-static const unsigned transpose = 0;
-static const unsigned recv = 0 ^ transpose, send = 1 ^ transpose;
+static constexpr unsigned transpose = 0;
+static constexpr unsigned recv = 0^transpose;
+static constexpr unsigned send = 1^transpose;
 
 static int OGS_MPI_SUPPORT = 0;
 static int OGS_OVERLAP = 1;
@@ -128,7 +140,7 @@ static void neighborAllToAll(int unit_size, oogs_t *gs)
     bufRecv = (unsigned char *)gs->bufRecv;
     bufSend = (unsigned char *)gs->bufSend;
   }
-  MPI_Neighbor_alltoallv(bufSend,
+  MPI_CHECK(MPI_Neighbor_alltoallv(bufSend,
                          gs->nbc.sendcounts,
                          gs->nbc.senddispls,
                          MPI_UNSIGNED_CHAR,
@@ -136,7 +148,7 @@ static void neighborAllToAll(int unit_size, oogs_t *gs)
                          gs->nbc.recvcounts,
                          gs->nbc.recvdispls,
                          MPI_UNSIGNED_CHAR,
-                         gs->nbc.comm);
+                         gs->nbc.comm));
 }
 
 static void pairwiseExchange(int unit_size, oogs_t *gs)
@@ -156,7 +168,7 @@ static void pairwiseExchange(int unit_size, oogs_t *gs)
     const uint *p, *pe, *size = c->size;
     for (p = c->p, pe = p + c->n; p != pe; ++p) {
       const int len = *(size++) * unit_size;
-      MPI_Irecv((void *)buf, len, MPI_UNSIGNED_CHAR, *p, *p, gs->comm, req++);
+      MPI_CHECK(MPI_Irecv((void *)buf, len, MPI_UNSIGNED_CHAR, *p, *p, gs->comm, req++));
       buf += len;
     }
   }
@@ -173,11 +185,12 @@ static void pairwiseExchange(int unit_size, oogs_t *gs)
     const uint *p, *pe, *size = c->size;
     for (p = c->p, pe = p + c->n; p != pe; ++p) {
       const int len = *(size++) * unit_size;
-      MPI_Isend((void *)buf, len, MPI_UNSIGNED_CHAR, *p, gs->rank, gs->comm, req++);
+      MPI_CHECK(MPI_Isend((void *)buf, len, MPI_UNSIGNED_CHAR, *p, gs->rank, gs->comm, req++));
       buf += len;
     }
-    MPI_Waitall(pwd->comm[send].n + pwd->comm[recv].n, pwd->req, MPI_STATUSES_IGNORE);
   }
+
+  MPI_CHECK(MPI_Waitall(pwd->comm[send].n + pwd->comm[recv].n, pwd->req, MPI_STATUSES_IGNORE));
 }
 void occaGatherScatterLocal(const dlong NlocalGather,
                             const dlong NrowBlocks,
@@ -358,21 +371,6 @@ oogs_t *oogs::setup(ogs_t *ogs,
       nbcDeviceEnabled = 1;
     } 
   }
-
-#if 0
-  oogs::packBufFloatAddKernel = buildKernel(oklpath + "oogs.okl", "packBuf_floatAdd", ogs::kernelInfo);
-  oogs::unpackBufFloatAddKernel =
-      buildKernel(oklpath + "oogs.okl", "unpackBuf_floatAdd", ogs::kernelInfo);
-  oogs::packBufDoubleAddKernel = buildKernel(oklpath + "oogs.okl", "packBuf_doubleAdd", ogs::kernelInfo);
-  oogs::unpackBufDoubleAddKernel =
-      buildKernel(oklpath + "oogs.okl", "unpackBuf_doubleAdd", ogs::kernelInfo);
-  oogs::packBufDoubleMinKernel = buildKernel(oklpath + "oogs.okl", "packBuf_doubleMin", ogs::kernelInfo);
-  oogs::unpackBufDoubleMinKernel =
-      buildKernel(oklpath + "oogs.okl", "unpackBuf_doubleMin", ogs::kernelInfo);
-  oogs::packBufDoubleMaxKernel = buildKernel(oklpath + "oogs.okl", "packBuf_doubleMax", ogs::kernelInfo);
-  oogs::unpackBufDoubleMaxKernel =
-      buildKernel(oklpath + "oogs.okl", "unpackBuf_doubleMax", ogs::kernelInfo);
-#endif
 
   std::list<oogs_mode> oogs_mode_list;
   oogs_mode_list.push_back(OOGS_LOCAL);
@@ -720,17 +718,17 @@ void oogs::start(occa::memory &o_v,
       unsigned char *buf = (unsigned char *)gs->o_bufRecv.ptr();
       if (gs->mode != OOGS_DEVICEMPI)
         buf = (unsigned char *)gs->bufRecv;
-
+  
       struct gs_data *hgs = (gs_data *)ogs->haloGshSym;
       const void *execdata = hgs->r.data;
       const struct pw_data *pwd = (pw_data *)execdata;
-
+  
       comm_req *req = pwd->req;
       const struct pw_comm_data *c = &pwd->comm[recv];
       const uint *p, *pe, *size = c->size;
       for (p = c->p, pe = p + c->n; p != pe; ++p) {
-        const size_t len = *(size++) * unit_size;
-        MPI_Irecv((void *)buf, len, MPI_UNSIGNED_CHAR, *p, *p, gs->comm, req++);
+        const int len = *(size++) * unit_size;
+        MPI_CHECK(MPI_Irecv((void *)buf, len, MPI_UNSIGNED_CHAR, *p, *p, gs->comm, req++));
         buf += len;
       }
     }

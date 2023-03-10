@@ -51,7 +51,6 @@ convertSmootherType(SmootherType s){
 
 }
 
-//build a single level
 pMGLevel::pMGLevel(elliptic_t* ellipticBase, int Nc,
                  setupAide options_, MPI_Comm comm_, bool _isCoarse) :
   multigridLevel(ellipticBase->mesh->Nelements * ellipticBase->mesh->Np,
@@ -65,28 +64,23 @@ pMGLevel::pMGLevel(elliptic_t* ellipticBase, int Nc,
   options = options_;
   degree = Nc;
 
-#if 0
-  if(!isCoarse || options.compareArgs("MULTIGRID COARSE SOLVE", "FALSE"))
-#endif
-    this->setupSmoother(ellipticBase);
+  this->setupSmoother(ellipticBase);
 
 }
 
 //build a level and connect it to the previous one
-pMGLevel::pMGLevel(elliptic_t* ellipticBase, //finest level
+pMGLevel::pMGLevel(elliptic_t* ellipticBase,   //finest level
                  mesh_t** meshLevels,
-                 elliptic_t* ellipticFine, //previous level
-                 elliptic_t* ellipticCoarse, //current level
+                 elliptic_t* ellipticFine,     //previous level
+                 elliptic_t* ellipticCoarse,   //current level
                  int Nf, int Nc,
                  setupAide options_,
                  MPI_Comm comm_,
-                 bool _isCoarse
-                 )
+                 bool _isCoarse)
   :
   multigridLevel(ellipticCoarse->mesh->Nelements * ellipticCoarse->mesh->Np,
                  ellipticCoarse->mesh->Np*(ellipticCoarse->mesh->Nelements + 
-                   ellipticCoarse->mesh->totalHaloPairs),
-                 comm_)
+                 ellipticCoarse->mesh->totalHaloPairs), comm_)
 {
   
   isCoarse = _isCoarse;
@@ -146,8 +140,8 @@ void pMGLevel::setupSmoother(elliptic_t* ellipticBase)
         UpLegChebyshevDegree = 3;
         DownLegChebyshevDegree = 3;
       } else {
-        UpLegChebyshevDegree = 5;
-        DownLegChebyshevDegree = 5;
+        UpLegChebyshevDegree = 3;
+        DownLegChebyshevDegree = 3;
       }
     } else {
       options.getArgs("MULTIGRID CHEBYSHEV DEGREE", UpLegChebyshevDegree);
