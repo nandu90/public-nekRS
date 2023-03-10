@@ -8,8 +8,7 @@
                                   @ restrict const dfloat *TAU,
                                   @ restrict const dfloat *STMAG2,
                                   @ restrict const dfloat *OIOJSK,
-				  @ restrict const dfloat *ywd,
-                                  @ restrict dfloat *SRCDIAG,
+				  @ restrict dfloat *SRCDIAG,
                                   @ restrict dfloat *SRC)
 {
   for (dlong e = 0; e < Nelements; ++e; @outer(0)) {
@@ -127,8 +126,6 @@
             sigd = p_sigd_max;
             f_beta_str = (1.0 + p_fb_c1st * xk3) / (1.0 + p_fb_c2st * xk3);
           }
-
-	  const dfloat yw = ywd[id];
 	  
           // compute source term for k
           const dfloat Y_k = rho * p_betainf_str * f_beta_str * itau;

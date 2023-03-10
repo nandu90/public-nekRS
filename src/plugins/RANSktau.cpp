@@ -17,8 +17,7 @@ static occa::memory o_mut;
 
 static occa::memory o_k;
 static occa::memory o_tau;
-static occa::memory o_wd;
-  
+
 static occa::kernel computeKernel;
 static occa::kernel mueKernel;
 static occa::kernel limitKernel;
@@ -167,12 +166,11 @@ void RANSktau::updateSourceTerms()
                 o_tau,
                 o_SijMag2,
                 o_OiOjSk,
-		o_wd,
-                o_BFDiag,
+		o_BFDiag,
                 o_FS);
 }
 
-void RANSktau::setup(nrs_t *nrsIn, dfloat mueIn, dfloat rhoIn, int ifld, occa::memory& o_wdIn)
+void RANSktau::setup(nrs_t *nrsIn, dfloat mueIn, dfloat rhoIn, int ifld)
 {
   if (setupCalled)
     return;
@@ -184,8 +182,6 @@ void RANSktau::setup(nrs_t *nrsIn, dfloat mueIn, dfloat rhoIn, int ifld, occa::m
 
   cds_t *cds = nrs->cds;
   mesh_t *mesh = nrs->meshV;
-
-  o_wd = o_wdIn;
 
   o_k = cds->o_S + cds->fieldOffsetScan[kFieldIndex] * sizeof(dfloat);
   o_tau = cds->o_S + cds->fieldOffsetScan[kFieldIndex + 1] * sizeof(dfloat);
