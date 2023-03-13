@@ -21,7 +21,8 @@ static occa::memory o_wd;
   
 static occa::kernel computeKernel;
 static occa::kernel mueKernel;
-
+static occa::kernel limitKernel;
+  
 static bool setupCalled = 0;
 
 static dfloat coeff[] = {
@@ -106,6 +107,10 @@ void RANSktau::buildKernel(occa::properties _kernelInfo)
     kernelName = "mue";
     fileName = path + kernelName + extension;
     mueKernel = platform->device.buildKernel(fileName, kernelInfo, true);
+
+    kernelName = "limit";
+    fileName = path + kernelName + extension;
+    limitKernel = platform->device.buildKernel(fileName, kernelInfo, true);
   }
 
   int Nscalar;
@@ -124,6 +129,7 @@ void RANSktau::updateProperties()
   occa::memory o_mue = nrs->o_mue;
   occa::memory o_diff = cds->o_diff + cds->fieldOffsetScan[kFieldIndex] * sizeof(dfloat);
 
+  limitKernel(mesh->Nelements * mesh->Np, o_k, o_tau);
   mueKernel(mesh->Nelements * mesh->Np, nrs->fieldOffset, rho, mueLam, o_k, o_tau, o_mut, o_mue, o_diff);
 }
 
@@ -150,29 +156,18 @@ void RANSktau::updateSourceTerms()
       ->axmyMany(mesh->Nlocal, NSOfields, nrs->fieldOffset, 0, 1.0, nrs->meshV->o_invLMM, o_SijOij);
 
   nrs->SijOijMag2Kernel(mesh->Nelements * mesh->Np, nrs->fieldOffset, 1, o_SijOij, o_OiOjSk, o_SijMag2);
-
-  const dfloat taumin = platform->linAlg->min(mesh->Nlocal, o_tau, platform->comm.mpiComm);
-  const dfloat taumax = platform->linAlg->max(mesh->Nlocal, o_tau, platform->comm.mpiComm);
-
-  const dfloat fact = 0.01;
-  dfloat sfac = 1.0;
-  if(taumin < -fact*taumax){
-    sfac = 0.0;
-  }
     
   computeKernel(mesh->Nelements,
                 nrs->cds->fieldOffset[kFieldIndex],
                 rho,
                 mueLam,
-		sfac,
-                mesh->o_vgeo,
+		mesh->o_vgeo,
                 mesh->o_D,
                 o_k,
                 o_tau,
                 o_SijMag2,
                 o_OiOjSk,
-		o_wd,
-                o_BFDiag,
+		o_BFDiag,
                 o_FS);
 }
 
