@@ -132,15 +132,14 @@
           const dfloat kSrc = fmin(mu_t * stMag2, 10.0 * Y_k * kk);
           const dfloat kDiag = Y_k;
 
-          // compute rource term for omega
+          // compute source term for tau
           const dfloat x_w = fabs(OiOjSk) * (tau * tau * tau * p_ibetainf_str3);
           const dfloat f_b = (p_pope) ? (1.0 + p_fb_c1 * x_w) / (1.0 + p_fb_c2 * x_w) : 1.0;
 	  const dfloat Y_w = -rho * p_beta0 * f_b;
 	  const dfloat S_w0 = -rho * sigd *xk;
 	  const dfloat G_wp = rho * p_alp_inf * tau * stMag2;
 
-	  dfloat S_tau = 8.0 * mue * xtq;
-	  S_tau = fmin(S_tau, 4.0 * p_beta0 / 3.0);
+	  const dfloat S_tau = fmin(8.0 * mue * xtq, 4.0 * p_beta0 / 3.0);
 	  const dfloat S_taup = 8.0 * rho * p_alpinf_str * kk * xtq * p_sigma_tau;	  
 	  
 	  const dfloat tauSrc = -Y_w - S_tau;
