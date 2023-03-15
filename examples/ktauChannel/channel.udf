@@ -61,10 +61,7 @@ void UDF_Setup(nrs_t *nrs)
   platform->options.getArgs("VISCOSITY", mueLam); 
   platform->options.getArgs("DENSITY", rho); 
 
-  double *ywd = (double *) nek::scPtr(1);
-  o_ywd = platform->device.malloc(nrs->fieldOffset * sizeof(dfloat), ywd);
-
-  RANSktau::setup(nrs, mueLam, rho, scalarFieldStart, o_ywd);
+  RANSktau::setup(nrs, mueLam, rho, scalarFieldStart);
 }
 
 void UDF_ExecuteStep(nrs_t *nrs, dfloat time, int tstep)

@@ -18,10 +18,11 @@ static occa::memory o_mut;
 
 static occa::memory o_k;
 static occa::memory o_tau;
-static occa::memory o_wd;
-  
+
 static occa::kernel computeKernel;
 static occa::kernel mueKernel;
+static occa::kernel limitKernel;
+  
 static occa::kernel SijMag2OiOjSkKernel;
 
 static bool setupCalled = 0;
@@ -41,8 +42,7 @@ static dfloat coeff[] = {
     100.0,     // fb_c2
     0.52,      // alp_inf
     1e-8,      // TINY
-    0,         // Pope correction
-    4.4        // crEddFactor
+    0         // Pope correction
 };
 } // namespace
 
@@ -82,10 +82,7 @@ void RANSktau::buildKernel(occa::properties _kernelInfo)
     kernelInfo["defines/p_tiny"] = coeff[13];
   if (!kernelInfo.get<std::string>("defines/p_pope").size())
     kernelInfo["defines/p_pope"] = coeff[14];
-  if (!kernelInfo.get<std::string>("defines/p_crEddFactor").size())
-    kernelInfo["defines/p_crEddFactor"] = coeff[15];
-
-
+  
   const int verbose = platform->options.compareArgs("VERBOSE", "TRUE") ? 1 : 0;
 
   if (platform->comm.mpiRank == 0 && verbose) {
@@ -109,6 +106,10 @@ void RANSktau::buildKernel(occa::properties _kernelInfo)
     fileName = path + kernelName + extension;
     mueKernel = platform->device.buildKernel(fileName, kernelInfo, true);
 
+    kernelName = "limit";
+    fileName = path + kernelName + extension;
+    limitKernel = platform->device.buildKernel(fileName, kernelInfo, true);
+
     kernelName = "SijMag2OiOjSk";
     fileName = path + kernelName + extension;
     SijMag2OiOjSkKernel = platform->device.buildKernel(fileName, kernelInfo, true);
@@ -130,6 +131,7 @@ void RANSktau::updateProperties()
   occa::memory o_mue = nrs->o_mue;
   occa::memory o_diff = cds->o_diff + cds->fieldOffsetScan[kFieldIndex] * sizeof(dfloat);
 
+  limitKernel(mesh->Nelements * mesh->Np, o_k, o_tau);
   mueKernel(mesh->Nelements * mesh->Np, nrs->fieldOffset, rho, mueLam, o_k, o_tau, o_mut, o_mue, o_diff);
 }
 
@@ -150,33 +152,22 @@ void RANSktau::updateSourceTerms()
   postProcessing::strainRotationRate(nrs, true, true, o_SijOij);
 
   SijMag2OiOjSkKernel(mesh->Nelements * mesh->Np, nrs->fieldOffset, 1, o_SijOij, o_OiOjSk, o_SijMag2);
-
-  const dfloat taumin = platform->linAlg->min(mesh->Nlocal, o_tau, platform->comm.mpiComm);
-  const dfloat taumax = platform->linAlg->max(mesh->Nlocal, o_tau, platform->comm.mpiComm);
-
-  const dfloat fact = 0.01;
-  dfloat sfac = 1.0;
-  if(taumin < -fact*taumax){
-    sfac = 0.0;
-  }
     
   computeKernel(mesh->Nelements,
                 nrs->cds->fieldOffset[kFieldIndex],
                 rho,
                 mueLam,
-		sfac,
-                mesh->o_vgeo,
+		mesh->o_vgeo,
                 mesh->o_D,
                 o_k,
                 o_tau,
                 o_SijMag2,
                 o_OiOjSk,
-		o_wd,
-                o_BFDiag,
+		o_BFDiag,
                 o_FS);
 }
 
-void RANSktau::setup(nrs_t *nrsIn, dfloat mueIn, dfloat rhoIn, int ifld, occa::memory& o_wdIn)
+void RANSktau::setup(nrs_t *nrsIn, dfloat mueIn, dfloat rhoIn, int ifld)
 {
   if (setupCalled)
     return;
@@ -188,8 +179,6 @@ void RANSktau::setup(nrs_t *nrsIn, dfloat mueIn, dfloat rhoIn, int ifld, occa::m
 
   cds_t *cds = nrs->cds;
   mesh_t *mesh = nrs->meshV;
-
-  o_wd = o_wdIn;
 
   o_k = cds->o_S + cds->fieldOffsetScan[kFieldIndex] * sizeof(dfloat);
   o_tau = cds->o_S + cds->fieldOffsetScan[kFieldIndex + 1] * sizeof(dfloat);
