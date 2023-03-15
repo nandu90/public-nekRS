@@ -151,20 +151,26 @@ void fileBcast(const fs::path &srcPathIn,
       fs::remove(filePath); 
     }
 
+    int retVal;
     MPI_File fh;
-    MPI_File_open(commLocal, filePath.c_str(), MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL, &fh);
+    retVal = MPI_File_open(commLocal, filePath.c_str(), MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL, &fh);
+    nrsCheck(retVal, MPI_COMM_SELF, EXIT_FAILURE,
+             "MPI_File_open with retVal=%d\n!", retVal);
+
 
     if (localRank == localRankRoot) {
       MPI_Status status;
-      int retVal = MPI_File_write_at(fh, 0, fileBuf, bufSize, MPI_BYTE, &status);
+      retVal = MPI_File_write_at(fh, 0, fileBuf, bufSize, MPI_BYTE, &status);
       nrsCheck(retVal, MPI_COMM_SELF, EXIT_FAILURE,
-               "MPI_File_write_at with retVal=%d!", retVal);
+               "MPI_File_write_at with retVal=%d\n!", retVal);
     }
 
     MPI_File_sync(fh);
     MPI_Barrier(commLocal);
     MPI_File_sync(fh);
-    MPI_File_close(&fh);
+    retVal = MPI_File_close(&fh);
+    nrsCheck(retVal, MPI_COMM_SELF, EXIT_FAILURE,
+               "MPI_File_close with retVal=%d\n!", retVal);
 
     if (localRank == localRankRoot) {
       fileSync(filePath.c_str());

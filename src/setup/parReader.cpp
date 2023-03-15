@@ -1308,8 +1308,6 @@ void setDefaultSettings(setupAide &options, std::string casename, int rank)
   options.setArgs("PLATFORM NUMBER", "0");
   options.setArgs("VERBOSE", "FALSE");
 
-  options.setArgs("NEKNEK BOUNDARY EXT ORDER", "1");
-
   options.setArgs("ADVECTION", "TRUE");
   options.setArgs("ADVECTION TYPE", "CUBATURE+CONVECTIVE");
 

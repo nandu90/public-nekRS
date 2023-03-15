@@ -36,7 +36,10 @@ constexpr int bcTypeS = p_bcTypeS;
 constexpr int bcTypeF0 = p_bcTypeF0;
 constexpr int bcTypeF = p_bcTypeF;
 
+constexpr int bcTypeNone = p_bcTypeNone;
+
 #undef p_bcTypeW
+#undef p_bcTypeINT
 #undef p_bcTypeV
 #undef p_bcTypeSYMX
 #undef p_bcTypeSYMY
@@ -51,9 +54,13 @@ constexpr int bcTypeF = p_bcTypeF;
 #undef p_bcTypeONZ
 #undef p_bcTypeON
 #undef p_bcTypeO
+
+#undef p_bcTypeINTS
 #undef p_bcTypeS
 #undef p_bcTypeF0
 #undef p_bcTypeF
+
+#undef p_bcTypeNone
 
 bool useNekBCs();
 void setup(std::vector<std::string> slist, std::string field);

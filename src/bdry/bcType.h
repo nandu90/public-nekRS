@@ -33,6 +33,8 @@ lower value wins on shared edges/corners
 
 #define p_velNBcType 17
 
+#define p_bcTypeNone 99
+
 #define p_bcTypeINTS 1
 #define p_bcTypeS 2
 #define p_bcTypeF0 3

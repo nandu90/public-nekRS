@@ -494,8 +494,10 @@ int main(int argc, char** argv)
   double tSolveStepMin = std::numeric_limits<double>::max();
   double tSolveStepMax = std::numeric_limits<double>::min();
 
-  if (rank == 0 && !lastStep) {
-    if (nekrs::endTime() > nekrs::startTime())
+  if (rank == 0) {
+    if (lastStep)
+      std::cout << "endTime or numSteps reached already -> skip timestepping\n"; 
+    else if (nekrs::endTime() > nekrs::startTime())
       std::cout << "\ntimestepping to time " << nekrs::endTime() << " ...\n";
     else
       std::cout << "\ntimestepping for " << nekrs::numSteps() << " steps ...\n";

@@ -97,8 +97,12 @@ echo "export NEKRS_HOME=$NEKRS_HOME" >>$SFILE
 echo "export NEKRS_GPU_MPI=$NEKRS_GPU_MPI" >>$SFILE
 echo "export ROMIO_HINTS=$ROMIO_HINTS" >>$SFILE
 
+echo "export NEKRS_CACHE_BCAST=0" >>$SFILE
+echo "export NEKRS_TMP_DIR=/local/scratch" >>$SFILE
+
 echo "export MPICH_GPU_SUPPORT_ENABLED=1" >> $SFILE
 echo "export MPICH_OFI_NIC_POLICY=NUMA" >> $SFILE
+
 
 # https://github.com/Nek5000/Nek5000/issues/759
 echo "export FI_OFI_RXM_RX_SIZE=32768" >> $SFILE # >=lelt, large mpi-messsage for restart

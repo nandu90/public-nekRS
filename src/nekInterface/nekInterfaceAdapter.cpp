@@ -565,7 +565,8 @@ void buildNekInterface(int ldimt, int N, int np, setupAide &options)
       if (buildRequired) {
         const double tStart = MPI_Wtime();
 
-        const std::string pipeToNull = (rank == 0) ? std::string("") : std::string(">/dev/null 2>&1");
+        std::string pipeToNull = (verbose) ? std::string("") : std::string(">/dev/null 2>&1");
+        if(rank != 0) pipeToNull = std::string(">/dev/null 2>&1"); // in case multiple ranks will build
         const std::string case_dir(fs::current_path());
         const std::string include_dirs = "./ " + case_dir + " " + installDir + "/include/bdry";
         const std::string nekInterface_dir = installDir + "/nekInterface";
@@ -574,7 +575,7 @@ void buildNekInterface(int ldimt, int N, int np, setupAide &options)
           make_args += "-s ";
 
         if (rank == 0)
-          printf("building nekInterface for lx1=%d, lelt=%d and lelg=%d ...", N + 1, lelt, nelgt);
+          printf("building nekInterface for lx1=%d, lelt=%d and lelg=%d ... ", N + 1, lelt, nelgt);
 
         fflush(stdout);
 
@@ -582,7 +583,7 @@ void buildNekInterface(int ldimt, int N, int np, setupAide &options)
         sprintf(buf,
                 "cd %s"
                 " && cp -f %s/makefile.template makefile"
-                "  && make %s"
+                " && make %s"
                 "S=%s "
                 "OPT_INCDIR=\"%s\" "
                 "CASENAME=%s "
@@ -598,6 +599,7 @@ void buildNekInterface(int ldimt, int N, int np, setupAide &options)
                 cache_dir.c_str(),
                 nekInterface_dir.c_str(),
                 pipeToNull.c_str());
+
         if (verbose && rank == 0)
           printf("\n%s\n", buf);
         if (system(buf))
@@ -655,7 +657,7 @@ void bootstrap()
 
   if (platform->options.compareArgs("BUILD ONLY", "FALSE")) {
     if (rank == 0) {
-      printf("loading nek ... \n");
+      printf("loading nek ... ");
       fflush(stdout);
     }
 

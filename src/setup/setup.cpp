@@ -120,7 +120,7 @@ void nrsSetup(MPI_Comm comm, setupAide &options, nrs_t *nrs)
       platform->options.setArgs("GS OVERLAP", "FALSE");
 
     if (platform->comm.mpiRank == 0 && platform->options.compareArgs("GS OVERLAP", "FALSE"))
-      std::cout << "gs overlap disabled\n\n";
+      std::cout << "gs comm overlap disabled\n\n";
   }
 
   nrs->flow = 1;
@@ -423,9 +423,6 @@ void nrsSetup(MPI_Comm comm, setupAide &options, nrs_t *nrs)
     kernelName = "SijOij" + suffix;
     nrs->SijOijKernel = platform->kernels.get(section + kernelName);
 
-    kernelName = "SijOijMag2";
-    nrs->SijOijMag2Kernel = platform->kernels.get(section + kernelName);
-
     kernelName = "gradientVolume" + suffix;
     nrs->gradientVolumeKernel = platform->kernels.get(section + kernelName);
 
@@ -593,7 +590,7 @@ void nrsSetup(MPI_Comm comm, setupAide &options, nrs_t *nrs)
         nbrBIDs = bcMap::size(1);
       for (int bID = 1; bID <= nbrBIDs; bID++) {
         std::string bcTypeText(bcMap::text(bID, "scalar" + sid));
-        if (platform->comm.mpiRank == 0)
+        if (platform->comm.mpiRank == 0 && bcTypeText.size())
           printf("bID %d -> bcType %s\n", bID, bcTypeText.c_str());
       }
 
@@ -652,7 +649,7 @@ void nrsSetup(MPI_Comm comm, setupAide &options, nrs_t *nrs)
 
     for (int bID = 1; bID <= bcMap::size(0); bID++) {
       std::string bcTypeText(bcMap::text(bID, "velocity"));
-      if (platform->comm.mpiRank == 0)
+      if (platform->comm.mpiRank == 0 && bcTypeText.size())
         printf("bID %d -> bcType %s\n", bID, bcTypeText.c_str());
     }
 
@@ -836,7 +833,7 @@ void nrsSetup(MPI_Comm comm, setupAide &options, nrs_t *nrs)
 
     for (int bID = 1; bID <= nbrBIDs; bID++) {
       std::string bcTypeText(bcMap::text(bID, "mesh"));
-      if (platform->comm.mpiRank == 0)
+      if (platform->comm.mpiRank == 0 && bcTypeText.size())
         printf("bID %d -> bcType %s\n", bID, bcTypeText.c_str());
     }
 

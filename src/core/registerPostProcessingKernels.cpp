@@ -25,6 +25,10 @@ void registerPostProcessingKernels()
   fileName = oklpath + "/postProcessing/" + kernelName + ".okl";
   platform->kernels.add(kernelName, fileName, kernelInfo);
 
+  kernelName = "Qcriterion";
+  fileName = oklpath + "/postProcessing/" + kernelName + ".okl";
+  platform->kernels.add(kernelName, fileName, kernelInfo);
+
   kernelInfo["includes"] += oklpath + "/postProcessing/planarAveraging.h";
 
   for (const std::string dir : {"XY", "XZ", "YZ"}) {

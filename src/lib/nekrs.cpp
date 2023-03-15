@@ -102,11 +102,17 @@ void setup(MPI_Comm commg_in, MPI_Comm comm_in,
     std::cout << "using OCCA_CACHE_DIR: " << occa::env::OCCA_CACHE_DIR << std::endl << std::endl;
   }
 
+  options.setArgs("CI-MODE", std::to_string(ciMode));
+  if(rank == 0 && ciMode)
+    std::cout << "enabling continous integration mode " << ciMode << "\n";
+
   int nelgt, nelgv;
   const std::string meshFile = options.getArgs("MESH FILE");
   re2::nelg(meshFile, nelgt, nelgv, comm);
   nrsCheck(size > nelgv, platform->comm.mpiComm, EXIT_FAILURE, 
            "MPI tasks > number of elements!", "");
+
+  nek::bootstrap();
 
   // jit compile udf
   std::string udfFile;
@@ -116,21 +122,16 @@ void setup(MPI_Comm commg_in, MPI_Comm comm_in,
     udfLoad();
   }
 
-  options.setArgs("CI-MODE", std::to_string(ciMode));
-  if(rank == 0 && ciMode)
-    std::cout << "enabling continous integration mode " << ciMode << "\n";
+  // here we might access some nek variables
+  if(udf.setup0) udf.setup0(comm, options); 
 
-  nek::bootstrap();
-
-  if(udf.setup0) udf.setup0(comm, options);
+  compileKernels();
 
   {
     int overlap = 1;
     if(options.compareArgs("GS OVERLAP", "FALSE")) overlap = 0;
     oogs::overlap(overlap);
   }
-
-  compileKernels();
 
   if(buildOnly) {
     MPI_Barrier(platform->comm.mpiComm);
@@ -488,7 +489,7 @@ int nrsFinalize(nrs_t *nrs)
     nek::finalize();
   }
 
-  if (platform->comm.mpiRank == 0 && exitValue)
+  if (platform->comm.mpiRank == 0)
       std::cout << "finished with exit code " << exitValue << std::endl;
 
   return exitValue;

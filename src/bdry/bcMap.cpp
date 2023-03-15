@@ -73,7 +73,8 @@ static std::map<std::string, int> vBcTextToID = {
     {"zeroxyvalue/fixedgradient", bcMap::bcTypeONZ},
     // {"zeroTValue/fixedgradient", bcMap::bcTypeON},
     {"fixedgradient", bcMap::bcTypeO},
-    {"zerogradient", bcMap::bcTypeO}
+    {"zerogradient", bcMap::bcTypeO},
+    {"none", bcMap::bcTypeNone}
 };
 
 static std::map<int, std::string> vBcIDToText = {
@@ -93,7 +94,8 @@ static std::map<int, std::string> vBcIDToText = {
     {bcMap::bcTypeONY, "zeroXZValue/fixedGradient"},
     {bcMap::bcTypeONZ, "zeroXYValue/fixedGradient"},
     // {bcMap::bcTypeON, "zeroTValue/fixedGradient"},
-    {bcMap::bcTypeO, "fixedGradient"}
+    {bcMap::bcTypeO, "fixedGradient"},
+    {bcMap::bcTypeNone ,"none"}
 };
 
 static std::map<std::string, int> sBcTextToID = {{"periodic", 0},
@@ -101,13 +103,17 @@ static std::map<std::string, int> sBcTextToID = {{"periodic", 0},
                                                  {"codedfixedvalue", bcMap::bcTypeS},
                                                  {"zerogradient", bcMap::bcTypeF0},
                                                  {"codedfixedgradient", bcMap::bcTypeF},
-                                                 {"codedFixedgradient", bcMap::bcTypeF}};
+                                                 {"codedFixedgradient", bcMap::bcTypeF},
+                                                 {"none", bcMap::bcTypeNone}
+};
 
 static std::map<int, std::string> sBcIDToText = {{0, "periodic"},
                                                  {bcMap::bcTypeINTS, "interpolation"},
                                                  {bcMap::bcTypeS, "codedFixedValue"},
                                                  {bcMap::bcTypeF0, "zeroGradient"},
-                                                 {bcMap::bcTypeF, "codedFixedGradient"}};
+                                                 {bcMap::bcTypeF, "codedFixedGradient"},
+                                                 {bcMap::bcTypeNone ,"none"}
+};
 
 static void v_setup(std::string s);
 static void s_setup(std::string s);
@@ -122,6 +128,7 @@ static void v_setup(std::string field, std::vector<std::string> slist)
 
   for (int bid = 0; bid < slist.size(); bid++) {
     std::string key = slist[bid];
+
     if (key.compare("p") == 0) key = "periodic";
 
     if (key.compare("w") == 0) key = "zerovalue";
@@ -293,6 +300,8 @@ void deriveMeshBoundaryConditions(std::vector<std::string> velocityBCs)
 
     std::string key = "zeronvalue/zerogradient"; // default
 
+    if (keyIn.compare("none") == 0) key = "none";
+
     if (keyIn.compare("zerovalue") == 0) key = "zerovalue";
     if (keyIn.compare("codedfixedvalue") == 0) key = "codedfixedvalue";
 
@@ -357,6 +366,8 @@ int ellipticType(int bid, std::string field)
         bcType = NEUMANN;
       if (bcID == bcTypeON)
         bcType = ZERO_TANGENTIAL;
+      if (bcID == bcTypeNone)
+        bcType = NO_OP;
     }
     else if (field.compare("y-velocity") == 0 || field.compare("y-mesh") == 0) {
       const std::string fld = (field.compare("y-velocity") == 0) ? "velocity" : "mesh";
@@ -375,6 +386,8 @@ int ellipticType(int bid, std::string field)
         bcType = NEUMANN;
       if (bcID == bcTypeON)
         bcType = ZERO_TANGENTIAL;
+      if (bcID == bcTypeNone)
+        bcType = NO_OP;
     }
     else if (field.compare("z-velocity") == 0 || field.compare("z-mesh") == 0) {
       const std::string fld = (field.compare("z-velocity") == 0) ? "velocity" : "mesh";
@@ -393,12 +406,16 @@ int ellipticType(int bid, std::string field)
         bcType = NEUMANN;
       if (bcID == bcTypeON)
         bcType = ZERO_TANGENTIAL;
+      if (bcID == bcTypeNone)
+        bcType = NO_OP;
     }
     else if (field.compare("pressure") == 0) {
       const int bcID = bToBc.at({"velocity", bid - 1});
       bcType = NEUMANN;
       if (bcID == bcTypeO || bcID == bcTypeONX || bcID == bcTypeONY || bcID == bcTypeONZ || bcID == bcTypeON)
         bcType = DIRICHLET;
+      if (bcID == bcTypeNone)
+        bcType = NO_OP;
     }
     else if (field.compare(0, 6, "scalar") == 0) {
       const int bcID = bToBc.at({field, bid - 1});
@@ -406,6 +423,8 @@ int ellipticType(int bid, std::string field)
       bcType = NEUMANN;
       if (bcID == bcTypeS)
         bcType = DIRICHLET;
+      if (bcID == bcTypeNone)
+        bcType = NO_OP;
     }
 
     nrsCheck(bcType == -1, MPI_COMM_SELF, EXIT_FAILURE,
@@ -426,6 +445,9 @@ std::string text(int bid, std::string field)
   if (bid < 1) return std::string();
 
   const int bcID = bToBc.at({field, bid - 1});
+
+  if (bcID == bcTypeNone) 
+    return std::string("");
 
   if (field.compare("velocity") == 0 && (bcID == bcTypeV || bcID == bcTypeINT))
     oudfFindDirichlet(field);
@@ -497,7 +519,7 @@ void check(mesh_t* mesh)
     if (err && platform->comm.mpiRank == 0) 
       printf("Cannot find boundary ID %d in mesh!\n", id);
   }
-  nrsCheck(err, platform->comm.mpiComm, EXIT_FAILURE, "\n", "");
+  nrsCheck(err, platform->comm.mpiComm, EXIT_FAILURE, "%s\n", "");
 
   found = 0;
   for (int f = 0; f < mesh->Nelements * mesh->Nfaces; f++) {
@@ -505,11 +527,7 @@ void check(mesh_t* mesh)
       found = 1;
   }
   MPI_Allreduce(MPI_IN_PLACE, &found, 1, MPI_INT, MPI_MAX, platform->comm.mpiComm);
-  if (found) {
-    if (platform->comm.mpiRank == 0) printf("WARNING: Mesh has unmapped boundary IDs!\n");
-  }
-
-
+  nrsCheck(found, platform->comm.mpiComm, EXIT_FAILURE, "%\n", "Mesh has unmapped boundary IDs!");
 }
 
 void setBcMap(std::string field, int* map, int nIDs)

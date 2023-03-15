@@ -18,7 +18,6 @@
 static int HYPREinit = 0;
 
 #define DEBUG 0
-#define LEGACY
 
 namespace hypreWrapper {
 
@@ -74,9 +73,7 @@ boomerAMG_t::boomerAMG_t(int _nRows,
   const HYPRE_BigInt ilower = (HYPRE_BigInt)rowStart;
   const HYPRE_BigInt iupper = ilower + (HYPRE_BigInt)nRows - 1;
 
-#ifndef LEGACY
   if(!HYPREinit) HYPRE_Init();
-#endif
 
   A = new HYPRE_IJMatrix();
   HYPRE_IJMatrixCreate(comm, ilower, iupper, ilower, iupper, A);
@@ -210,21 +207,12 @@ boomerAMG_t::boomerAMG_t(int _nRows,
 
 void __attribute__((visibility("default"))) boomerAMG_t::solve(void *bin, void *xin)
 {
+  HYPRE_IJVectorUpdateValues(*x, nRows, NULL, (HYPRE_Real *)xin, 1);
+  HYPRE_IJVectorUpdateValues(*b, nRows, NULL, (HYPRE_Real *)bin, 1);
+
   HYPRE_ParVector par_x;
   HYPRE_ParVector par_b;
   HYPRE_ParCSRMatrix par_A;
-
-#ifndef LEGACY
-  HYPRE_IJVectorUpdateValues(*x, nRows, NULL, (HYPRE_Real *)xin, 1);
-  HYPRE_IJVectorUpdateValues(*b, nRows, NULL, (HYPRE_Real *)bin, 1);
-#else
-  HYPRE_IJVectorSetValues(*b, nRows, NULL, (HYPRE_Real *)bin);
-  HYPRE_IJVectorAssemble(*b);
-  HYPRE_IJVectorGetObject(*b, (void**) &par_b);
-
-  HYPRE_IJVectorAssemble(*x);
-  HYPRE_IJVectorGetObject(*x, (void **) &par_x);
-#endif
 
   HYPRE_IJVectorGetObject(*x, (void **)&par_x);
   HYPRE_IJVectorGetObject(*b, (void **)&par_b);

@@ -164,7 +164,6 @@ struct nrs_t {
   occa::kernel curlKernel;
 
   occa::kernel SijOijKernel;
-  occa::kernel SijOijMag2Kernel;
 
   occa::kernel maskCopyKernel;
   occa::kernel maskCopy2Kernel;

@@ -714,6 +714,8 @@ void oogs::start(occa::memory &o_v,
             o_v,
             gs->o_bufSend);
 
+    ogs->device.finish(); // buffers (send/recv) ready for MPI
+
     if (gs->earlyPrepostRecv) {
       unsigned char *buf = (unsigned char *)gs->o_bufRecv.ptr();
       if (gs->mode != OOGS_DEVICEMPI)
@@ -732,8 +734,6 @@ void oogs::start(occa::memory &o_v,
         buf += len;
       }
     }
-
-    ogs->device.finish(); // send buffer ready for MPI to be consumed
   }
 }
 
@@ -782,7 +782,6 @@ void oogs::finish(occa::memory &o_v,
     if(pwd->comm[send].total)
       gs->o_bufSend.copyTo(gs->bufSend, pwd->comm[send].total * unit_size, 0, "async: true");
 
-    // MPI syncs device on exit
     ogsHostTic(gs->comm, 1);
     if (gs->modeExchange == OOGS_EX_NBC)
       neighborAllToAll(unit_size, gs);
@@ -798,7 +797,6 @@ void oogs::finish(occa::memory &o_v,
   }
 
   if (gs->mode == OOGS_DEVICEMPI) {
-    // MPI syncs device on exit
     ogsHostTic(gs->comm, 1);
     if (gs->modeExchange == OOGS_EX_NBC)
       neighborAllToAll(unit_size, gs);

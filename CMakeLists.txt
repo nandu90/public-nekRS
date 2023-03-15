@@ -288,8 +288,9 @@ set(SRC
     src/udf/compileUDFKernels.cpp
     src/nekInterface/nekInterfaceAdapter.cpp
     src/postProcessing/planarAvg.cpp
-    src/postProcessing/strainRate.cpp
+    src/postProcessing/strainRotationRate.cpp
     src/postProcessing/viscousDrag.cpp
+    src/postProcessing/Qcriterion.cpp
     ${BENCH_SOURCES}
     ${MESH_SOURCES}
     ${ELLIPTIC_SOURCES}
