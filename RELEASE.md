@@ -10,9 +10,9 @@
 * Improved runtime statistics
 * Improved Chebyshev smoother
 * Flexible time averaging 
-* `on` boundary condition (aligned)
+* on boundary condition (aligned)
 * Extrapolation initialGuess method
-* DPCPP backend
+* DPCPP backend to support Intel GPUs
 * Scaleable JIT compilation
 * More examples
 * Various bug fixes 
@@ -32,6 +32,7 @@
 * [par] Replace `stressFormulation = true` by `equation = navierStokes+variableViscosity` 
 * [par] Replace bcType `fixedValue` by `codedFixedValue`
 * [par] Replace `elasticity` by `pcg+block` for mesh solver
+* All `boundaryIDs` need to be assigned (for an internal boundary use `none` in `boundaryTypeMap`)
 
 ## Known Bugs / Restrictions
 
