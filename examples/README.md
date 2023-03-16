@@ -1,7 +1,7 @@
-# Feature Overiew
+# Feature Coverage 
 
 
-| Feature                 | GAB | KTC | LMA | TPF | MVC | HMI | EDN | CHT |
+|                         | GAB | KTC | LMA | TPF | MVC | HMI | EDN | CHT |
 |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|
 | lowMach                 |     |     |  x  |     |  x  |     |     |     |
 | varying p0th            |     |     |     |     |  x  |     |     |     |
@@ -11,6 +11,7 @@
 | variable props          |  x  |  x  |  x  |     |  x  |     |     |     |
 | Dirichlet BC            |  x  |     |  x  |     |     |  x  |  x  |  x  |
 | Flux (Neumann) BC       |  x  |     |     |     |     |     |     |  x  |
+| user BC data (usrwrk)   |  x  |     |     |     |     |     |     |     |
 | traction BC             |  x  |     |     |     |     |     |     |     |
 | sym BC                  |     |  x  |     |     |  x  |  x  |     |     |
 | turbulent outflow       |     |     |     |     |     |  x  |     |     |
@@ -30,9 +31,9 @@
 | overset grids (neknek)  |     |     |     |     |     |     |  x  |     |
 | par casedata            |  x  |     |     |  x  |  x  |  x  |  x  |     |
 | nek data exchange       |  x  |     |     |     |     |     |     |     |
-| hpf-RT                  |  x  |     |     |  x  |     |     |     |     |
-| avm                     |     |     |     |  x  |     |     |     |     |
-| time subcycling         |     |     |     |     |     |     |     |     |
+| hpf-RT                  |  x  |     |     |  x  |     |  x  |     |     |
+| avm (scalar)            |     |     |     |  x  |     |     |     |     |
+| time subcycling         |     |     |     |     |     |     |  x  |     |
 
 
 ### Ledgend
