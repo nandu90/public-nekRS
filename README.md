@@ -31,7 +31,7 @@ Capabilities:
 
 Requirements:
 * Linux, Mac OS X (Microsoft Windows is not supported) 
-* C++17/C99 compatible compilers + GNU Fortran
+* C++17/C99 compatible compilers + GNU/Intel Fortran
 * MPI-3.1 or later
 * CMake version 3.18 or later 
 
