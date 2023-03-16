@@ -328,6 +328,8 @@ MPI_Comm setupSession(cmdOptions *cmdOpt, const MPI_Comm &comm, session_data_t &
     cmdOpt->setupFile = sessionList[color].setupFile;
     cmdOpt->sizeTarget = size;
 
+    delete[] sessionList;
+
     if(cmdOpt->debug) {
       std::cout << "globalRank:" << rankGlobal << " localRank: " << rank << " pid: " << ::getpid()
                 << " commSize: " << size << " setupFile:" << cmdOpt->setupFile << "\n";
@@ -567,6 +569,8 @@ int main(int argc, char** argv)
     if (tStep % 100 == 0) fflush(stdout);
   }
   MPI_Pcontrol(0);
+
+  delete cmdOpt;
 
   const int exitValue = nekrs::finalize();
 
