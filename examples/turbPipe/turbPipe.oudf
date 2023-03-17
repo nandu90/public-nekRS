@@ -17,6 +17,8 @@ void pressureDirichletConditions(bcData *bc)
 
 void scalarDirichletConditions(bcData *bc)
 {
-  bc->s = 1.0;
-  if(bc->id == 1) bc->s = 0.0;
+  if (bc->id == 1)
+    bc->s = 0;
+  else 
+    bc->s = 0.5*(tanh((bc->z-1.0)/0.2) + 1.0); // smooth ramp 
 }
