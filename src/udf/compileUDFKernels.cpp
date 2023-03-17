@@ -19,8 +19,7 @@ occa::properties compileUDFKernels()
   MPI_Barrier(platform->comm.mpiComm);
   const double tStart = MPI_Wtime();
   if (platform->comm.mpiRank == 0)
-    printf("loading udf kernels ... ");
-  fflush(stdout);
+    std::cout << "loading udf kernels ... " << std::endl;
 
   occa::properties kernelInfoBC = kernelInfo;
   if (udf.loadKernels) {
@@ -31,6 +30,7 @@ occa::properties compileUDFKernels()
     // kernelInfoBC will include any relevant user-defined kernel props
     udf.autoloadKernels(kernelInfoBC);
   }
+  
   const std::string bcDataFile = installDir + "/include/bdry/bcData.h";
   kernelInfoBC["includes"] += bcDataFile.c_str();
   std::string oklFileCache;
@@ -38,6 +38,17 @@ occa::properties compileUDFKernels()
   kernelInfoBC["includes"] += realpath(oklFileCache.c_str(), NULL);
 
   kernelInfoBC += meshKernelProperties(N);
+
+  // just to bail out early in case included source doesn't compile 
+  {
+   const std::string dummyKernelName = "compileUDFKernelsTest";
+   const std::string dummyKernelStr = std::string("@kernel void compileUDFKernelsTest(int N) {"
+                                                  "  for (int i = 0; i < N; ++i; @tile(64, @outer, @inner)) {}" "}");
+
+  if (platform->comm.mpiRank == 0)
+     platform->device.occaDevice().buildKernelFromString(dummyKernelStr, dummyKernelName, kernelInfoBC);
+ 
+  }
 
   MPI_Barrier(platform->comm.mpiComm);
   const double loadTime = MPI_Wtime() - tStart;

@@ -763,4 +763,29 @@ bool unalignedMixedBoundary(std::string field)
   return false;
 }
 
+void addKernelConstants(occa::properties &kernelInfo) 
+{
+  kernelInfo["defines/p_bcTypeW"] = bcTypeW;
+  kernelInfo["defines/p_bcTypeINT"] = bcTypeINT;
+  kernelInfo["defines/p_bcTypeV"] = bcTypeV;
+  kernelInfo["defines/p_bcTypeSYMX"] = bcTypeSYMX;
+  kernelInfo["defines/p_bcTypeSYMY"] = bcTypeSYMY;
+  kernelInfo["defines/p_bcTypeSYMZ"] = bcTypeSYMZ;
+  kernelInfo["defines/p_bcTypeSYM"] = bcTypeSYM;
+  kernelInfo["defines/p_bcTypeSHLX"] = bcTypeSHLX;
+  kernelInfo["defines/p_bcTypeSHLY"] = bcTypeSHLY;
+  kernelInfo["defines/p_bcTypeSHLZ"] = bcTypeSHLZ;
+  kernelInfo["defines/p_bcTypeSHL"] = bcTypeSHL;
+  kernelInfo["defines/p_bcTypeONX"] = bcTypeONX;
+  kernelInfo["defines/p_bcTypeONY"] = bcTypeONY;
+  kernelInfo["defines/p_bcTypeONZ"] = bcTypeONZ;
+  kernelInfo["defines/p_bcTypeON"] = bcTypeON;
+  kernelInfo["defines/p_bcTypeO"] = bcTypeO;
+
+  kernelInfo["defines/p_bcTypeINTS"] = bcTypeINTS;
+  kernelInfo["defines/p_bcTypeS"] = bcTypeS;
+  kernelInfo["defines/p_bcTypeF0"] = bcTypeF0;
+  kernelInfo["defines/p_bcTypeF"] = bcTypeF;
+}
+
 } // namespace
