@@ -210,9 +210,9 @@ endif()
 include(config/hypre.cmake)
 
 ###############################################################################
-# Build OpenBLAS
+# Build BLAS/LAPACK
 ###############################################################################
-add_subdirectory(3rd_party/OpenBLAS)
+add_subdirectory(3rd_party/lapack)
 
 ###############################################################################
 # Build Nek5000 dependencies                                                  #
@@ -310,7 +310,7 @@ set_property(
 add_library(nekrs-lib SHARED ${SRC})
 
 set_target_properties(nekrs-lib PROPERTIES LINKER_LANGUAGE CXX OUTPUT_NAME nekrs)
-target_link_libraries(nekrs-lib PUBLIC libocca PRIVATE gs ${GSLIB} openblas)
+target_link_libraries(nekrs-lib PUBLIC libocca PRIVATE gs ${GSLIB} blas lapack)
 if(OpenMP_FOUND)
 target_link_libraries(nekrs-lib PUBLIC OpenMP::OpenMP_CXX)
 endif()
