@@ -185,6 +185,34 @@ void adjustDt(nrs_t* nrs, int tstep)
     }
 }
 
+void lagState(nrs_t *nrs)
+{
+  // lag velocity
+  for (int s = std::max(nrs->nBDF, nrs->nEXT); s > 1; s--) {
+    const auto Nbyte = (nrs->NVfields * sizeof(dfloat)) * nrs->fieldOffset;
+    nrs->o_U.copyFrom(nrs->o_U, Nbyte, (s - 1) * Nbyte, (s - 2) * Nbyte);
+  }
+
+  // lag scalars
+  if (nrs->Nscalar) {
+    auto cds = nrs->cds;
+    for (int s = std::max(cds->nBDF, cds->nEXT); s > 1; s--) {
+      const auto Nbyte = cds->fieldOffsetSum * sizeof(dfloat);
+      cds->o_S.copyFrom(cds->o_S, Nbyte, (s - 1) * Nbyte, (s - 2) * Nbyte);
+    }
+  }
+
+  // lag mesh velocity
+  const bool movingMesh = platform->options.compareArgs("MOVING MESH", "TRUE");
+  if (movingMesh) {
+    auto mesh = nrs->_mesh;
+    for (int s = std::max(nrs->nEXT, mesh->nAB); s > 1; s--) {
+      const auto Nbyte = (nrs->NVfields * sizeof(dfloat)) * nrs->fieldOffset;
+      mesh->o_U.copyFrom(mesh->o_U, Nbyte, (s - 1) * Nbyte, (s - 2) * Nbyte);
+    }
+  }
+}
+
 void extrapolate(nrs_t *nrs)
 {
   mesh_t *mesh = nrs->meshV;
@@ -351,10 +379,6 @@ void step(nrs_t *nrs, dfloat time, dfloat dt, int tstep)
 
     if (nrs->cht)
       nrs->meshV->computeInvLMM();
-    for (int s = std::max(nrs->nEXT, mesh->nAB); s > 1; s--) {
-      const auto Nbyte = (nrs->NVfields * sizeof(dfloat)) * nrs->fieldOffset;
-      mesh->o_U.copyFrom(mesh->o_U, Nbyte, (s - 1) * Nbyte, (s - 2) * Nbyte);
-    }
   }
 
   const int isOutputStep = nrs->isOutputStep;
@@ -369,6 +393,9 @@ void step(nrs_t *nrs, dfloat time, dfloat dt, int tstep)
 
     if (nrs->neknek)
       nrs->neknek->updateBoundary(nrs, tstep, iter);
+
+    if (iter == 1)
+      lagState(nrs);
 
     applyDirichlet(nrs, timeNew);
     
@@ -579,7 +606,6 @@ void makeq(nrs_t *nrs, dfloat time, int tstep, occa::memory o_FS, occa::memory o
 
   for (int s = std::max(cds->nBDF, cds->nEXT); s > 1; s--) {
     const auto Nbyte = cds->fieldOffsetSum * sizeof(dfloat);
-    cds->o_S.copyFrom(cds->o_S, Nbyte, (s - 1) * Nbyte, (s - 2) * Nbyte);
     o_FS.copyFrom(o_FS, Nbyte, (s - 1) * Nbyte, (s - 2) * Nbyte);
   }
 }
@@ -727,7 +753,6 @@ void makef(
 
   for (int s = std::max(nrs->nBDF, nrs->nEXT); s > 1; s--) {
     const auto Nbyte = (nrs->NVfields * sizeof(dfloat)) * nrs->fieldOffset;
-    nrs->o_U.copyFrom(nrs->o_U, Nbyte, (s - 1) * Nbyte, (s - 2) * Nbyte);
     o_FU.copyFrom(o_FU, Nbyte, (s - 1) * Nbyte, (s - 2) * Nbyte);
   }
 }

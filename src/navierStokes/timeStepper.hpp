@@ -6,6 +6,7 @@
 namespace timeStepper {
 void adjustDt(nrs_t *nrs, int tstep);
 
+void lagState(nrs_t *nrs);
 void step(nrs_t *nrs, dfloat time, dfloat dt, int tstep);
 void setDt(nrs_t *nrs, dfloat dt, int tstep);
 void makef(nrs_t* nrs, dfloat time, int tstep, occa::memory o_FU, occa::memory o_BF);
