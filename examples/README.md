@@ -1,4 +1,4 @@
-# Feature Coverage 
+# Demonstrated features 
 
 
 |                         | GAB | KTC | LMA | TPF | MVC | HMI | EDN | CHT |
