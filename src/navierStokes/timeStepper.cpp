@@ -61,8 +61,8 @@ void evaluateProperties(nrs_t *nrs, const double timeNew) {
 
       std::string regularizationMethod;
       platform->options.getArgs("SCALAR" + sid + " REGULARIZATION METHOD", regularizationMethod);
-      const bool applyAVM = regularizationMethod.find("HPF_RESIDUAL") != std::string::npos
-        || regularizationMethod.find("HIGHEST_MODAL_DECAY") != std::string::npos;
+      const bool applyAVM = regularizationMethod.find("AVM_RESIDUAL") != std::string::npos
+        || regularizationMethod.find("AVM_HIGHEST_MODAL_DECAY") != std::string::npos;
       if(applyAVM){
         avm::apply(nrs, timeNew, is, cds->o_S);
       }
@@ -507,7 +507,7 @@ void makeq(nrs_t *nrs, dfloat time, int tstep, occa::memory o_FS, occa::memory o
     (is) ? mesh = cds->meshV : mesh = cds->mesh[0];
     const dlong isOffset = cds->fieldOffsetScan[is];
 
-    if (platform->options.compareArgs("SCALAR" + sid + " REGULARIZATION METHOD", "RELAXATION")) {
+    if (platform->options.compareArgs("SCALAR" + sid + " REGULARIZATION METHOD", "HPF_RELAXATION")) {
       cds->filterRTKernel(
         cds->meshV->Nelements,
         is,
@@ -651,7 +651,7 @@ void makef(
     platform->timer.toc("udfUEqnSource");
   }
 
-  if (platform->options.compareArgs("REGULARIZATION METHOD", "RELAXATION")) {
+  if (platform->options.compareArgs("REGULARIZATION METHOD", "HPF_RELAXATION")) {
     nrs->filterRTKernel(
       mesh->Nelements,
       nrs->o_filterMT,

@@ -98,7 +98,7 @@ occa::memory computeEps(nrs_t* nrs, const dfloat time, const dlong scalarIndex, 
   std::string sid = scalarDigitStr(scalarIndex);
 
   const int useHPFResidual =
-      platform->options.compareArgs("SCALAR" + sid + " REGULARIZATION METHOD", "HPF_RESIDUAL");
+      platform->options.compareArgs("SCALAR" + sid + " REGULARIZATION METHOD", "AVM_RESIDUAL");
 
   dfloat Uinf = 1.0;
   if(useHPFResidual){
@@ -154,16 +154,20 @@ occa::memory computeEps(nrs_t* nrs, const dfloat time, const dlong scalarIndex, 
     Uinf = 1.0 / Uinf;
   }
 
-  const dfloat logReferenceSensor = -4.0 * log10(p);
 
   dfloat coeff = 0.5;
   platform->options.getArgs("SCALAR" + sid + " REGULARIZATION VISMAX COEFF", coeff);
 
   dfloat rampParameter = 1.0;
-  platform->options.getArgs("SCALAR" + sid + " REGULARIZATION RAMP CONSTANT", rampParameter);
+  platform->options.getArgs("SCALAR" + sid + " REGULARIZATION MDH ACTIVATION WIDTH", rampParameter);
+
+  dfloat threshold = -4.0;
+  platform->options.getArgs("SCALAR" + sid + " REGULARIZATION MDH THRESHOLD", threshold);
 
   dfloat scalingCoeff = 1.0;
   platform->options.getArgs("SCALAR" + sid + " REGULARIZATION SCALING COEFF", scalingCoeff);
+
+  const dfloat logReferenceSensor = threshold * log10(p);
 
   computeMaxViscKernel(
     mesh->Nelements,

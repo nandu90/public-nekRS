@@ -131,9 +131,9 @@ cds_t *cdsSetup(nrs_t *nrs, setupAide options)
 
       if (!options.compareArgs("SCALAR" + sid + " REGULARIZATION METHOD", "NONE"))
         scalarFilteringEnabled = true;
-      if (options.compareArgs("SCALAR" + sid + " REGULARIZATION METHOD", "HPF_RESIDUAL"))
+      if (options.compareArgs("SCALAR" + sid + " REGULARIZATION METHOD", "AVM_RESIDUAL"))
         avmEnabled = true;
-      if (options.compareArgs("SCALAR" + sid + " REGULARIZATION METHOD", "HIGHEST_MODAL_DECAY"))
+      if (options.compareArgs("SCALAR" + sid + " REGULARIZATION METHOD", "AVM_HIGHEST_MODAL_DECAY"))
         avmEnabled = true;
     }
   }
@@ -148,24 +148,27 @@ cds_t *cdsSetup(nrs_t *nrs, setupAide options)
         continue;
       if (!cds->compute[is])
         continue;
-      int filterNc = -1;
-      options.getArgs("SCALAR" + sid + " HPFRT MODES", filterNc);
-      dfloat filterS;
-      options.getArgs("SCALAR" + sid + " HPFRT STRENGTH", filterS);
-      filterS = -1.0 * fabs(filterS);
-      cds->filterS[is] = filterS;
 
-      dfloat *A = filterSetup(cds->mesh[is], filterNc);
-
-      const dlong Nmodes = cds->mesh[is]->N + 1;
-      cds->o_filterMT.copyFrom(A, Nmodes * Nmodes * sizeof(dfloat), is * Nmodes * Nmodes * sizeof(dfloat));
-
-      free(A);
+      if (options.compareArgs("SCALAR" + sid + " REGULARIZATION METHOD", "HPF_RELAXATION")) { 
+        int filterNc = -1;
+        options.getArgs("SCALAR" + sid + " HPFRT MODES", filterNc);
+        dfloat filterS;
+        options.getArgs("SCALAR" + sid + " HPFRT STRENGTH", filterS);
+        filterS = -1.0 * fabs(filterS);
+        cds->filterS[is] = filterS;
+ 
+        dfloat *A = filterSetup(cds->mesh[is], filterNc);
+ 
+        const dlong Nmodes = cds->mesh[is]->N + 1;
+        cds->o_filterMT.copyFrom(A, Nmodes * Nmodes * sizeof(dfloat), is * Nmodes * Nmodes * sizeof(dfloat));
+ 
+        free(A);
+      }
     }
-  }
 
-  if (avmEnabled)
-    avm::setup(cds);
+    if (avmEnabled)
+      avm::setup(cds);
+  }
 
   std::string kernelName;
   const std::string suffix = "Hex3D";
