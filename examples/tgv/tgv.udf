@@ -1,20 +1,22 @@
 #include "udf.hpp"
 
-@oklBegin{
+@oklBegin
+{
 
-  @kernel void magSqr(const dlong Ntotal,
-                      const dlong offset,
-                      @restrict const dfloat *U,
-                      @restrict dfloat * uSqr)
-  {
-    for (dlong n=0;n<Ntotal;++n;@tile(p_blockSize,@outer,@inner)) {
-      uSqr[n + 0*offset] = U[n + 0*offset]*U[n + 0*offset] + 
-                           U[n + 1*offset]*U[n + 1*offset] + 
-                           U[n + 2*offset]*U[n + 2*offset];
-    }
+@kernel void magSqr(const dlong Ntotal,
+                    const dlong offset,
+                    @restrict const dfloat *U,
+                    @restrict dfloat * uSqr)
+{
+  for (dlong n=0;n<Ntotal;++n;@tile(p_blockSize,@outer,@inner)) {
+    uSqr[n + 0*offset] = U[n + 0*offset]*U[n + 0*offset] + 
+                         U[n + 1*offset]*U[n + 1*offset] + 
+                         U[n + 2*offset]*U[n + 2*offset];
   }
+}
 
-}@oklEnd
+}
+@oklEnd
 
 void printDiagnostics(nrs_t *nrs, dfloat time, int tstep)
 {
@@ -66,10 +68,6 @@ void printDiagnostics(nrs_t *nrs, dfloat time, int tstep)
 }
 
 /* UDF Functions */                                                      
-
-void UDF_LoadKernels(occa::properties& kernelInfo)
-{
-}
 
 void UDF_Setup0(MPI_Comm comm, setupAide &options)
 {

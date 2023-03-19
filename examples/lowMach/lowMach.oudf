@@ -12,7 +12,7 @@ void scalarDirichletConditions(bcData *bc)
 }
 
 
-@kernel void userQ(const dlong N,
+@kernel void cfill(const dlong N,
                    @restrict const dfloat * X,
                    @restrict dfloat * QVOL)
 {
@@ -23,12 +23,12 @@ void scalarDirichletConditions(bcData *bc)
   }
 }
 
-@kernel void userVp(const dlong N,
-                    const dlong uOffset,
-                    const dlong sOffset,
-                    @restrict const dfloat * TEMP,
-                    @restrict dfloat * UPROP,
-                    @restrict dfloat * SPROP)
+@kernel void cfillVp(const dlong N,
+                     const dlong uOffset,
+                     const dlong sOffset,
+                     @restrict const dfloat * TEMP,
+                     @restrict dfloat * UPROP,
+                     @restrict dfloat * SPROP)
 {
   for (dlong id = 0; id < N; ++id; @tile(p_blockSize, @outer, @inner)) {
     UPROP[id + 0*uOffset] = 1.0;

@@ -2,8 +2,8 @@
 // nekRS User Defined File
 //
 
-#include <math.h>
 #include "udf.hpp"
+#include "plugins/lpm.hpp"
 
 #include "ci.inc"
 #include <vector>
@@ -293,9 +293,6 @@ void UDF_LoadKernels(occa::properties &kernelInfo)
   kernelInfo["defines/p_amp"] = P_AMP;
   kernelInfo["defines/p_omega"] = P_OMEGA;
   kernelInfo["defines/p_pi"] = M_PI;
-
-  // register kernel specific kernels
-  lpm_t::registerKernels(kernelInfo);
 }
 
 void UDF_Setup0(MPI_Comm comm, setupAide &options)

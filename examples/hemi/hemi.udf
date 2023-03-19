@@ -1,23 +1,22 @@
 //
 // nekRS User Defined File
 //
-#include <math.h>
 #include "udf.hpp"
+#include "plugins/lpm.hpp"
 #include "linspaceVector.hpp"
 
 static dfloat Stk;
 static dlong nParticles;
 static dlong nParticlesGlobal;
-static occa::kernel particleRHSKernel;
 static lpm_t* particles = nullptr;
 
-/* UDF Functions */                                                      
-
-void UDF_LoadKernels(occa::properties& kernelInfo)
+@oklBegin
 {
-  particleRHSKernel = oudfBuildKernel(kernelInfo, "particleRHS");
-  lpm_t::registerKernels(kernelInfo);
+
+#include "hemi.oudf"
+
 }
+@oklEnd
 
 void UDF_Setup0(MPI_Comm comm, setupAide &options)
 {
@@ -32,7 +31,7 @@ void UDF_Setup0(MPI_Comm comm, setupAide &options)
 
 }
 
-void particleRHS(nrs_t *nrs, lpm_t *lpm, dfloat time, occa::memory o_y, void *userdata, occa::memory o_ydot)
+void userRHS(nrs_t *nrs, lpm_t *lpm, dfloat time, occa::memory o_y, void *userdata, occa::memory o_ydot)
 {
   auto offset = lpm->fieldOffset();
 
@@ -41,7 +40,7 @@ void particleRHS(nrs_t *nrs, lpm_t *lpm, dfloat time, occa::memory o_y, void *us
 
   auto o_Uinterp = lpm->getInterpField("fluid_velocity");
 
-  particleRHSKernel(lpm->numParticles(), offset, o_y, lpm->o_prop, o_Uinterp, o_ydot);
+  particleRHS(lpm->numParticles(), offset, o_y, lpm->o_prop, o_Uinterp, o_ydot);
 }
 
 void UDF_Setup(nrs_t *nrs)
@@ -49,7 +48,7 @@ void UDF_Setup(nrs_t *nrs)
   auto * mesh = nrs->meshV;
 
   particles = new lpm_t(nrs, 0.0);
-  particles->setUserRHS(particleRHS);
+  particles->setUserRHS(userRHS);
 
   particles->setSolver("AB");
 

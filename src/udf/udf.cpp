@@ -18,20 +18,6 @@ static int pressureDirichletConditions = 0;
 static int scalarDirichletConditions = 0;
 static int scalarNeumannConditions = 0;
 
-uint32_t fchecksum(std::ifstream &file)
-{
-  uint32_t checksum = 0;
-  unsigned shift = 0;
-  for (uint32_t ch = file.get(); file; ch = file.get()) {
-    checksum += (ch << shift);
-    shift += 8;
-    if (shift == 32) {
-      shift = 0;
-    }
-  }
-  return checksum;
-}
-
 void oudfFindDirichlet(std::string &field)
 {
   nrsCheck(field.find("velocity") != std::string::npos && !velocityDirichletConditions,
@@ -63,42 +49,29 @@ void oudfFindNeumann(std::string &field)
 
 bool udfSplit(const std::string &udfFileCache, const std::string &oudfFileCache)
 {
+  std::stringstream buffer;
+  std::ifstream udff(udfFileCache);
+  buffer << udff.rdbuf();
+  udff.close();
+  const std::string udfFileContent = buffer.str();
+
   std::regex rgx(R"(\s*@oklBegin\s*\{([\s\S]*)\}\s*@oklEnd)");
 
-  std::stringstream buffer;
+  // strip out okl section
   {
-    std::ifstream udff(udfFileCache);
-    buffer << udff.rdbuf();
+    std::ofstream udff(udfFileCache, std::ios::trunc);
+    udff << std::regex_replace(udfFileContent, rgx, "");
     udff.close();
+    fileSync(udfFileCache.c_str());
   }
-  std::ofstream udff(udfFileCache, std::ios::trunc);
-  udff << std::regex_replace(buffer.str(), rgx, "");
-  udff.close();
-  fileSync(udfFileCache.c_str());
 
+  // filter okl section
   std::smatch match;
-  std::string search = buffer.str();
-  std::regex_search(search, match, rgx);
-
-  const bool oklSectionFound = !match.str(1).empty();
-
-  {
-    // clean-up preprocessor line control directives (not supported by occa's parser)
-    std::stringstream buffer;
-    {
-      std::ifstream f(oudfFileCache);
-      buffer << f.rdbuf();
-      f.close();
-    }
-    std::ofstream f(oudfFileCache, std::ios::trunc);
-    f << std::regex_replace(buffer.str(), std::regex(R"(#\s*\d.*\n)"), "");
-    f.close();
-  }
-
+  const bool oklSectionFound = std::regex_search(udfFileContent, match, rgx);
   if(oklSectionFound) {
-    std::ofstream df(oudfFileCache, std::ios::trunc);
-    df << match.str(1);
-    df.close();
+    std::ofstream f(oudfFileCache, std::ios::trunc);
+    f << std::regex_replace(match.str(1), std::regex(R"(#\s*\d.*\n)"), "");
+    f.close();
     fileSync(oudfFileCache.c_str());
   }
 
@@ -292,6 +265,30 @@ void udfBuild(const char *_udfFile, setupAide &options)
         fflush(stdout);
 
         copyFile(udfFile.c_str(), udfFileCache.c_str());
+        {
+          std::map<std::string, std::string> pluginTable =
+          {
+            {"nekrs_tavg_hpp_"        , "tavg::buildKernel"},
+            {"nekrs_RANSktau_hpp_"    , "RANSktau::buildKernel"},
+            {"nekrs_lowMach_hpp_"     , "lowMach::buildKernel"},
+            {"nekrs_velRecycling_hpp_", "velRecycling::buildKernel"},
+            {"nekrs_lpm_hpp_"         , "lpm_t::registerKernels"}
+          };
+
+          std::ofstream f(udfFileCache, std::ios::app);
+          f << "void UDF_AutoLoadPlugins(occa::properties& kernelInfo)" << std::endl
+            << "{" << std::endl;
+
+            for (auto const& plugin : pluginTable) {
+              f << "#ifdef " << plugin.first << std::endl
+                << plugin.second << "(kernelInfo);" << std::endl
+                << "#endif" << std::endl;
+            }
+
+          f << "}" << std::endl; 
+          f.close();
+        }
+
         copyFile(std::string(udf_dir + std::string("/CMakeLists.txt")).c_str(),
                  std::string(cache_dir + std::string("/udf/CMakeLists.txt")).c_str());
 
@@ -328,7 +325,7 @@ void udfBuild(const char *_udfFile, setupAide &options)
 
 
         {
-          // run cpp and split
+          // run pre-processor and split
           sprintf(cmd, "cd %s && make -j1 udf.i %s", cmakeBuildDir.c_str(), pipeToNull.c_str());
           const std::string postCppSource = cmakeBuildDir + "/CMakeFiles/UDF.dir/udf.cpp.i";
           const int retVal = system(cmd);
@@ -426,8 +423,9 @@ void udfLoad()
 {
   *(void **)(&udf.setup0) = udfLoadFunction("UDF_Setup0", 0);
   *(void **)(&udf.setup) = udfLoadFunction("UDF_Setup", 0);
-  *(void **)(&udf.loadKernels) = udfLoadFunction("UDF_LoadKernels", 1);
+  *(void **)(&udf.loadKernels) = udfLoadFunction("UDF_LoadKernels", 0);
   *(void **)(&udf.autoloadKernels) = udfLoadFunction("UDF_AutoLoadKernels", 0);
+  *(void **)(&udf.autoloadPlugins) = udfLoadFunction("UDF_AutoLoadPlugins", 1);
   *(void **)(&udf.executeStep) = udfLoadFunction("UDF_ExecuteStep", 0);
 }
 

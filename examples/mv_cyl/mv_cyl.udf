@@ -1,14 +1,11 @@
 //
 // nekRS User Defined File
 //
-#include <math.h>
 #include "udf.hpp"
 #include "plugins/lowMach.hpp"
 
 #include "ci.inc"
 
-static occa::kernel userVpKernel;
-static occa::kernel userMeshVelocityKernel;
 static dfloat XLEN;
 static dfloat YLEN;
 static dfloat ZLEN;
@@ -18,6 +15,14 @@ static dfloat P_DELTA;
 static dfloat P_OMEGA;
 static dfloat P_AMP;
 static dfloat P_ROT;
+
+@oklBegin
+{
+
+#include "mv_cyl.oudf"
+
+}
+@oklEnd
  
 void userq(nrs_t* nrs, dfloat time, occa::memory o_S, occa::memory o_SU)
 {
@@ -34,8 +39,8 @@ void uservp(nrs_t *nrs, dfloat time, occa::memory o_U, occa::memory o_S,
 {
   mesh_t *mesh = nrs->meshV;
 
-  userVpKernel(mesh->Nlocal, nrs->fieldOffset, nrs->cds->fieldOffset[0], nrs->p0the,
-               o_S, o_UProp, o_SProp);
+  userVp(mesh->Nlocal, nrs->fieldOffset, nrs->cds->fieldOffset[0], nrs->p0the,
+         o_S, o_UProp, o_SProp);
   if(!platform->options.compareArgs("MESH SOLVER", "NONE")){
     const dfloat nu = 1.0;
     auto o_mesh_diff = o_UProp + (2 * sizeof(dfloat))*nrs->fieldOffset;
@@ -51,9 +56,6 @@ void UDF_LoadKernels(occa::properties& kernelInfo)
   kernelInfo["defines/" "p_OMEGA"] = P_OMEGA;
   kernelInfo["defines/" "p_AMP"] = P_AMP;
   kernelInfo["defines/" "p_ROT"] = P_ROT;
-  userVpKernel = oudfBuildKernel(kernelInfo, "userVp");
-  userMeshVelocityKernel = oudfBuildKernel(kernelInfo, "userMeshVelocity");
-  lowMach::buildKernel(kernelInfo);
 }
 
 void UDF_Setup0(MPI_Comm comm, setupAide &options)
@@ -110,7 +112,7 @@ void UDF_ExecuteStep(nrs_t *nrs, dfloat time, int tstep)
 
     const dfloat hmin = linAlg->min(mesh->Nlocal, platform->o_mempool.slice0, platform->comm.mpiComm);
     const dfloat hmax = linAlg->max(mesh->Nlocal, platform->o_mempool.slice0, platform->comm.mpiComm);
-    userMeshVelocityKernel(mesh->Nlocal,
+    userMeshVelocity(mesh->Nlocal,
       nrs->fieldOffset,
       hmin,
       hmax,

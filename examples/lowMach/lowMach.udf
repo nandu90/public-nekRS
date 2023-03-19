@@ -7,23 +7,28 @@
 
 #include "ci.inc"
 
-static occa::kernel userQKernel;
-static occa::kernel userVpKernel;
-
 static dfloat P_DELTA;
 static dfloat P_GAMMA;
+
+@oklBegin
+{
+
+#include "lowMach.oudf"
+
+}
+@oklEnd
+
 
 void qtl(nrs_t* nrs, dfloat time, occa::memory o_div)
 {
   lowMach::qThermalIdealGasSingleComponent(time, o_div);
 }
 
-
 void userq(nrs_t *nrs, dfloat time, occa::memory o_S, occa::memory o_FS)
 {
   cds_t *cds   = nrs->cds;
   mesh_t *mesh = cds->mesh[0];
-  userQKernel(mesh->Nlocal, mesh->o_x, o_FS);
+  cfill(mesh->Nlocal, mesh->o_x, o_FS);
 }
 
 void uservp(nrs_t *nrs, dfloat time, occa::memory o_U, occa::memory o_S,
@@ -31,8 +36,8 @@ void uservp(nrs_t *nrs, dfloat time, occa::memory o_U, occa::memory o_S,
 {
   mesh_t *mesh = nrs->meshV;
 
-  userVpKernel(mesh->Nlocal, nrs->fieldOffset, nrs->cds->fieldOffset[0], 
-               o_S, o_UProp, o_SProp);
+  cfillVp(mesh->Nlocal, nrs->fieldOffset, nrs->cds->fieldOffset[0], 
+          o_S, o_UProp, o_SProp);
 }
 
 /* UDF Functions */                                                      
@@ -40,9 +45,6 @@ void uservp(nrs_t *nrs, dfloat time, occa::memory o_U, occa::memory o_S,
 void UDF_LoadKernels(occa::properties& kernelInfo)
 {
   kernelInfo["defines/p_DELTA"] = P_DELTA;
-  userQKernel = oudfBuildKernel(kernelInfo, "userQ");
-  userVpKernel = oudfBuildKernel(kernelInfo, "userVp");
-  lowMach::buildKernel(kernelInfo);
 }
 
 void UDF_Setup0(MPI_Comm comm, setupAide &options)

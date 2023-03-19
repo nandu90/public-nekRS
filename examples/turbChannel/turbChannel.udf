@@ -62,10 +62,6 @@ void useric(nrs_t *nrs)
 
 /* UDF Functions */                                                      
 
-void UDF_LoadKernels(occa::properties& kernelInfo)
-{
-}
-
 void UDF_Setup0(MPI_Comm comm, setupAide &options)
 {
   platform->par->extract("casedata", "ReTau",ReTau);

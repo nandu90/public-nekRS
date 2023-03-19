@@ -21,8 +21,10 @@
 
 * [udf] Changes in include files do not trigger rebuild 
 * [nrsconfig] Optional build settings have to be passed as a command line arg e.g. `-DENABLE_AMGX=ON`
+* [par] Plugins kernels will be loaded automatically (call in `UDF_LoadKernels` no longer required)
 
 ## Breaking Changes
+* [udf] Plugin header files need to be included explicitly
 * [udf] Rename `bc->wrk` => `bc->usrwrk`
 * Time step was added to `nekRS::outfld(..., int step, ...)`
 * [par] Use `pMGSchedule` instead of `pMultigridCoarsening` (see help for more details)
@@ -36,8 +38,8 @@
 
 ## Known Bugs / Restrictions
 
-* Poor performance when using polynomialOrder < 5
-* Poor performance of ASM/RAS smoother and OIFS on CPUs
+* Best performance requires a polynomialOrder 5-9
+* Not fully optimized for Intel GPUs and CPUs yet
 * [485](https://github.com/Nek5000/Nek5000/issues/485)
 * [729](https://github.com/Nek5000/Nek5000/issues/759)
 * [258](https://github.com/Nek5000/nekRS/issues/258)

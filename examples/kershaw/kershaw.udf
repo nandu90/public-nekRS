@@ -1,9 +1,13 @@
-#include <math.h>
 #include <numeric>
 #include "udf.hpp"
 
-/* UDF Functions */                                                      
 static dfloat P_EPS;
+
+@oklBegin
+{
+
+}
+@oklEnd
 
 void UDF_LoadKernels(occa::properties& kernelInfo)
 {

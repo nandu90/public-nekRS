@@ -4,7 +4,6 @@
 #include <numeric>
 
 static int ciMode = 0;
-static occa::kernel exactUVWKernel;
 
 #define EPS 1e-1
 
@@ -59,7 +58,7 @@ void ciTestErrors(nrs_t *nrs, dfloat time, int tstep)
   auto *mesh = nrs->meshV;
 
   auto o_Uexact = platform->o_mempool.slice0;
-  exactUVWKernel(mesh->Nlocal, nrs->fieldOffset, time, mesh->o_x, mesh->o_y, mesh->o_z, o_Uexact);
+  exactUVW(mesh->Nlocal, nrs->fieldOffset, time, mesh->o_x, mesh->o_y, mesh->o_z, o_Uexact);
 
   platform->linAlg->axpbyMany(mesh->Nlocal, nrs->NVfields, nrs->fieldOffset, 1.0, nrs->o_U, -1.0, o_Uexact);
 

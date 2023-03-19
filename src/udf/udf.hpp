@@ -9,11 +9,6 @@
 #include "bcMap.hpp"
 #include "constantFlowRate.hpp"
 #include "postProcessing.hpp"
-#include "plugins/velRecycling.hpp"
-#include "plugins/tavg.hpp"
-#include "plugins/lowMach.hpp"
-#include "plugins/lpm.hpp"
-#include "plugins/RANSktau.hpp"
 #include <functional>
 
 #define CIPASS                                                                                               \
@@ -34,6 +29,7 @@ void UDF_Setup0(MPI_Comm comm, setupAide &options);
 void UDF_Setup(nrs_t *nrs);
 void UDF_LoadKernels(occa::properties &kernelInfo);
 void UDF_AutoLoadKernels(occa::properties &kernelInfo);
+void UDF_AutoLoadPlugins(occa::properties &kernelInfo);
 void UDF_ExecuteStep(nrs_t *nrs, dfloat time, int tstep);
 }
 
@@ -41,6 +37,7 @@ using udfsetup0 = void (*)(MPI_Comm, setupAide &);
 using udfsetup = void (*)(nrs_t *);
 using udfloadKernels = void (*)(occa::properties &);
 using udfautoloadKernels = void (*)(occa::properties &);
+using udfautoloadPlugins = void (*)(occa::properties &);
 using udfexecuteStep = void (*)(nrs_t *, dfloat, int);
 
 using udfuEqnSource = std::function<void(nrs_t *, dfloat, occa::memory, occa::memory)>;
@@ -55,6 +52,7 @@ struct UDF {
   udfsetup setup;
   udfloadKernels loadKernels;
   udfautoloadKernels autoloadKernels;
+  udfautoloadPlugins autoloadPlugins;
   udfexecuteStep executeStep;
   udfuEqnSource uEqnSource;
   udfsEqnSource sEqnSource;
