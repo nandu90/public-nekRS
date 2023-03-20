@@ -131,6 +131,7 @@ cds_t *cdsSetup(nrs_t *nrs, setupAide options)
 
       if (!options.compareArgs("SCALAR" + sid + " REGULARIZATION METHOD", "NONE"))
         scalarFilteringEnabled = true;
+
       if (options.compareArgs("SCALAR" + sid + " REGULARIZATION METHOD", "AVM_RESIDUAL"))
         avmEnabled = true;
       if (options.compareArgs("SCALAR" + sid + " REGULARIZATION METHOD", "AVM_HIGHEST_MODAL_DECAY"))

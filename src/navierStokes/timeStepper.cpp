@@ -40,11 +40,14 @@ void advectionFlops(mesh_t *mesh, int Nfields)
 
   platform->flopCounter->add("advection", flopCount);
 }
+
 } // namespace
 
-void evaluateProperties(nrs_t *nrs, const double timeNew) {
+void evaluateProperties(nrs_t *nrs, const double timeNew) 
+{
   platform->timer.tic("udfProperties", 1);
   cds_t *cds = nrs->cds;
+
   if (udf.properties) {
     occa::memory o_S = platform->o_mempool.slice0;
     occa::memory o_SProp = platform->o_mempool.slice0;
@@ -54,6 +57,7 @@ void evaluateProperties(nrs_t *nrs, const double timeNew) {
     }
     udf.properties(nrs, timeNew, nrs->o_U, o_S, nrs->o_prop, o_SProp);
   }
+
   if(nrs->Nscalar){
     cds_t* cds = nrs->cds;
     for(int is = 0 ; is < cds->NSfields; ++is){
@@ -62,10 +66,9 @@ void evaluateProperties(nrs_t *nrs, const double timeNew) {
       std::string regularizationMethod;
       platform->options.getArgs("SCALAR" + sid + " REGULARIZATION METHOD", regularizationMethod);
       const bool applyAVM = regularizationMethod.find("AVM_RESIDUAL") != std::string::npos
-        || regularizationMethod.find("AVM_HIGHEST_MODAL_DECAY") != std::string::npos;
-      if(applyAVM){
+                            || regularizationMethod.find("AVM_HIGHEST_MODAL_DECAY") != std::string::npos;
+      if(applyAVM)
         avm::apply(nrs, timeNew, is, cds->o_S);
-      }
     }
   }
 

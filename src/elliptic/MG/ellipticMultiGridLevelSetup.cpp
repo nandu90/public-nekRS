@@ -337,7 +337,7 @@ dfloat pMGLevel::maxEigSmoothAx()
   occa::memory o_VxPfloat = platform->device.malloc(M, sizeof(pfloat));
 
   // generate a random vector for initial basis vector
-  for (dlong i = 0; i < N; i++) Vx[i] = (dfloat) drand48();
+  for (dlong i = 0; i < M; i++) Vx[i] = (dfloat) drand48();
 
   if (options.compareArgs("DISCRETIZATION","CONTINUOUS")) {
     ogsGatherScatter(Vx, ogsDfloat, ogsAdd, mesh->ogs);
@@ -351,6 +351,8 @@ dfloat pMGLevel::maxEigSmoothAx()
   }
 
   o_Vx.copyFrom(Vx, M*sizeof(dfloat));
+  platform->linAlg->fill(Nlocal, 0.0, o_V[0]);
+
   dfloat norm_vo = platform->linAlg->weightedInnerProdMany(
     Nlocal,
     elliptic->Nfields,

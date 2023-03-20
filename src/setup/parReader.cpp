@@ -1146,32 +1146,23 @@ void parseRegularization(const int rank, setupAide &options, inipp::Ini *par, st
       options.setArgs(parPrefix + "REGULARIZATION MDH ACTIVATION WIDTH", to_string_f(1.0));
       options.setArgs(parPrefix + "REGULARIZATION MDH THRESHOLD", to_string_f(-4.0));
       options.setArgs(parPrefix + "REGULARIZATION AVM C0", "FALSE");
+      options.setArgs(parPrefix + "REGULARIZATION HPF MODES", "1");
     }
     if (usesHPFRT) {
       options.setArgs(parPrefix + "HPFRT MODES", "1");
       options.setArgs(parPrefix + "REGULARIZATION METHOD", "HPF_RELAXATION");
     }
 
-    // common parameters
-    for (std::string s : list) {
-
-      const auto nmodeStr = parseValueForKey(s, "nmodes");
-      if (!nmodeStr.empty()) {
-        double value = std::stod(nmodeStr);
-        value = round(value);
-        options.setArgs(parPrefix + "HPFRT MODES", to_string_f(value));
-      }
-
-      const auto cutoffRatioStr = parseValueForKey(s, "cutoffratio");
-      if (!cutoffRatioStr.empty()) {
-        double filterCutoffRatio = std::stod(cutoffRatioStr);
-        double NFilterModes = round((N + 1) * (1 - filterCutoffRatio));
-        options.setArgs(parPrefix + "HPFRT MODES", to_string_f(NFilterModes));
-      }
-    }
-
     if (usesAVM) {
       for (std::string s : list) {
+
+        const auto nmodeStr = parseValueForKey(s, "nmodes");
+        if (!nmodeStr.empty()) {
+          double value = std::stod(nmodeStr);
+          value = round(value);
+          options.setArgs(parPrefix + "REGULARIZATION HPF MODES", to_string_f(value));
+        }
+
         const auto vismaxcoeffStr = parseValueForKey(s, "vismaxcoeff");
         if (!vismaxcoeffStr.empty()) {
           options.setArgs(parPrefix + "REGULARIZATION VISMAX COEFF", vismaxcoeffStr);
@@ -1206,6 +1197,18 @@ void parseRegularization(const int rank, setupAide &options, inipp::Ini *par, st
     if (usesHPFRT) {
       bool setsStrength = false;
       for (std::string s : list) {
+        const auto nmodeStr = parseValueForKey(s, "nmodes");
+        if (!nmodeStr.empty()) {
+          double value = std::stod(nmodeStr);
+          value = round(value);
+          options.setArgs(parPrefix + "HPFRT MODES", to_string_f(value));
+        }
+        const auto cutoffRatioStr = parseValueForKey(s, "cutoffratio");
+        if (!cutoffRatioStr.empty()) {
+          double filterCutoffRatio = std::stod(cutoffRatioStr);
+          double NFilterModes = round((N + 1) * (1 - filterCutoffRatio));
+          options.setArgs(parPrefix + "HPFRT MODES", to_string_f(NFilterModes));
+        }
 
         const auto scalingCoeffStr = parseValueForKey(s, "scalingcoeff");
         if (!scalingCoeffStr.empty()) {
@@ -1283,7 +1286,10 @@ void parseRegularization(const int rank, setupAide &options, inipp::Ini *par, st
                         options.getArgs("REGULARIZATION MDH ACTIVATION WIDTH"));
         options.setArgs(parPrefix + "REGULARIZATION MDH THRESHOLD",
                         options.getArgs("REGULARIZATION MDH THRESHOLD"));
-        options.setArgs(parPrefix + "REGULARIZATION AVM C0", options.getArgs("REGULARIZATION AVM C0"));
+        options.setArgs(parPrefix + "REGULARIZATION AVM C0", 
+                        options.getArgs("REGULARIZATION AVM C0"));
+        options.setArgs(parPrefix + "REGULARIZATION HPF MODES", 
+                        options.getArgs("REGULARIZATION HPF MODES"));
       }
     }
   }
