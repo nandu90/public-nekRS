@@ -628,17 +628,22 @@ void findpts_t::findptsEvalImpl(dfloat *out,
   static occa::memory o_in;
   static occa::memory o_out;
 
-  const auto Nbytes = inputOffset * nFields * sizeof(dfloat);
-  if (o_in.size() < Nbytes) {
-    if (o_in.size()) {
-      o_in.free();
-      o_out.free();
+  {
+    const auto Nbytes = inputOffset * nFields * sizeof(dfloat);
+    if (o_in.size() < Nbytes) {
+      if (o_in.size()) o_in.free();
+      constexpr int growthFactor = 2;
+      o_in = platform->device.malloc(growthFactor * Nbytes);
     }
+  }
 
-    constexpr int growthFactor = 2;
-
-    o_in = platform->device.malloc(growthFactor * Nbytes);
-    o_out = platform->device.malloc(growthFactor * Nbytes);
+  {
+    const auto Nbytes = outputOffset * nFields * sizeof(dfloat);
+    if (o_out.size() < Nbytes) {
+      if (o_out.size()) o_out.free();
+      constexpr int growthFactor = 2;
+      o_out = platform->device.malloc(growthFactor * Nbytes);
+    }
   }
 
   struct array src, outpt;
