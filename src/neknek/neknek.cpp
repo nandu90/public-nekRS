@@ -376,9 +376,11 @@ neknek_t::neknek_t(nrs_t *nrs, const session_data_t &session)
   }
 
   this->nEXT = 1;
-  platform->options.setArgs("NEKNEK BOUNDARY EXT ORDER", std::to_string(this->nEXT));
   if(!platform->options.getArgs("NEKNEK BOUNDARY EXT ORDER").empty())
     platform->options.getArgs("NEKNEK BOUNDARY EXT ORDER", this->nEXT);
+
+  // set boundary ext order to report to user, if not specified
+  platform->options.setArgs("NEKNEK BOUNDARY EXT ORDER", std::to_string(this->nEXT));
 
   this->coeffEXT.resize(this->nEXT);
   this->o_coeffEXT = platform->device.malloc(this->nEXT * sizeof(dfloat));
