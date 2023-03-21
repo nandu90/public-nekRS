@@ -72,7 +72,7 @@ void UDF_ExecuteStep(nrs_t *nrs, dfloat time, int tstep)
     if(benchmark == "BP5"){
       Nrep = 20;
       nrs->pSolver->options.setArgs("PRECONDITIONER", "NONE");
-      nrs->pSolver->options.setArgs("KRYLOV SOLVER", "PCG");
+      nrs->pSolver->options.setArgs("SOLVER", "PCG");
       nrs->pSolver->options.setArgs("MAXIMUM ITERATIONS", "500");
       nrs->pSolver->options.setArgs("SOLVER TOLERANCE", to_string_f(1e-15));
       ellipticPreconditionerSetup(nrs->pSolver, nrs->pSolver->ogs);
