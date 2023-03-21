@@ -977,10 +977,11 @@ void pMGLevel::build(elliptic_t *pSolver)
           auto maskedGlobalIds = (hlong*) calloc(mesh->Nlocal,sizeof(hlong));
           memcpy(maskedGlobalIds, mesh->globalIds, mesh->Nlocal * sizeof(hlong));
           auto maskIds = (dlong*) std::malloc(elliptic->o_maskIds.size());
-          elliptic->o_maskIds.copyTo(maskIds); 
-          for (dlong n = 0; n < elliptic->Nmasked; n++) maskedGlobalIds[maskIds[n]] = 0;
- 
-          elliptic->o_maskIdsGlobal.copyTo(maskedGlobalIds);
+          if(elliptic->Nmasked) {
+            elliptic->o_maskIds.copyTo(maskIds); 
+            for (dlong n = 0; n < elliptic->Nmasked; n++) maskedGlobalIds[maskIds[n]] = 0;
+          }
+
           ogsOverlap = (void *)oogs::setup(Nelements * Np,
                                            maskedGlobalIds,
                                            1,
