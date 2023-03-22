@@ -209,6 +209,9 @@ void ciSetup(MPI_Comm comm, setupAide &options)
   if (ciMode == 15) {
     options.setArgs("END TIME", std::string("0.0"));
     options.setArgs("NUMBER TIMESTEPS", std::string("0"));
+    options.setArgs("SCALAR00 SOLVER", "NONE");
+    options.setArgs("SCALAR01 SOLVER", "NONE");
+    options.setArgs("VELOCITY SOLVER", "NONE");
   }
 
   options.setArgs("BDF ORDER", "3");
@@ -594,19 +597,32 @@ dfloat amax(dfloat const *const array, const int size, MPI_Comm comm)
   return norm;
 }
 
+dfloat weightedNorm2Many(dfloat const *const array, dfloat const *const weight, const int n, const int Nfields, const int fieldOffset, MPI_Comm comm)
+{
+  dfloat norm = 0.0;
+  for (int i = 0; i < n; ++i){
+    const auto wt = weight[i];
+    for(int field = 0; field < Nfields; ++field){
+      const auto value = array[i + field * fieldOffset];
+      norm += wt * value * value;
+    }
+  }
+
+  MPI_Allreduce(MPI_IN_PLACE, &norm, 1, MPI_DFLOAT, MPI_SUM, comm);
+  return std::sqrt(norm);
+}
+
 void ciTestLinAlg(nrs_t *nrs, const int N)
 {
   linAlg_t *linAlg = platform->linAlg;
   MPI_Comm comm = platform->comm.mpiComm;
   int rank = platform->comm.mpiRank;
-  dfloat *x = (dfloat *)calloc(N, sizeof(dfloat));
-  for (int i = 0; i < N; ++i)
-    x[i] = drand48();
-  occa::memory o_x = platform->device.malloc(N * sizeof(dfloat), x);
+  auto x = randomVector<dfloat>(N);
+  occa::memory o_x = platform->device.malloc(N * sizeof(dfloat), x.data());
 
   const dfloat testTol = 50. * std::numeric_limits<dfloat>::epsilon();
-  auto evaluate_method = [&](auto linAlgMethod, auto referenceMethod, std::string id) {
-    const dfloat reference = referenceMethod(x, N, comm);
+  auto evaluateMethod = [&](auto linAlgMethod, auto referenceMethod, std::string id) {
+    const dfloat reference = referenceMethod(x.data(), N, comm);
     const dfloat value = linAlgMethod(N, o_x, comm);
     const dfloat err = abs((value - reference) / reference);
     if (rank == 0)
@@ -615,14 +631,37 @@ void ciTestLinAlg(nrs_t *nrs, const int N)
       CIFAIL;
   };
 
-  evaluate_method([&](auto N, auto o_x, auto comm) { return linAlg->sum(N, o_x, comm); }, sum, "sum");
-  evaluate_method([&](auto N, auto o_x, auto comm) { return linAlg->max(N, o_x, comm); }, max, "max");
-  evaluate_method([&](auto N, auto o_x, auto comm) { return linAlg->min(N, o_x, comm); }, min, "min");
-  evaluate_method([&](auto N, auto o_x, auto comm) { return linAlg->norm2(N, o_x, comm); }, norm2, "norm2");
-  evaluate_method([&](auto N, auto o_x, auto comm) { return linAlg->norm1(N, o_x, comm); }, norm1, "norm1");
-  evaluate_method([&](auto N, auto o_x, auto comm) { return linAlg->amax(N, o_x, comm); }, amax, "amax");
-  free(x);
+  evaluateMethod([&](auto N, auto o_x, auto comm) { return linAlg->sum(N, o_x, comm); }, sum, "sum");
+  evaluateMethod([&](auto N, auto o_x, auto comm) { return linAlg->max(N, o_x, comm); }, max, "max");
+  evaluateMethod([&](auto N, auto o_x, auto comm) { return linAlg->min(N, o_x, comm); }, min, "min");
+  evaluateMethod([&](auto N, auto o_x, auto comm) { return linAlg->norm2(N, o_x, comm); }, norm2, "norm2");
+  evaluateMethod([&](auto N, auto o_x, auto comm) { return linAlg->norm1(N, o_x, comm); }, norm1, "norm1");
+  evaluateMethod([&](auto N, auto o_x, auto comm) { return linAlg->amax(N, o_x, comm); }, amax, "amax");
   o_x.free();
+
+  int fieldOffset = N;
+  const int pageW = ALIGN_SIZE / sizeof(dfloat);
+  if (fieldOffset % pageW)
+    fieldOffset = (fieldOffset / pageW + 1) * pageW;
+
+  constexpr int maxFields = 10;
+  for(int Nfields = 1; Nfields <= maxFields; ++Nfields){
+    auto x = randomVector<dfloat>(Nfields * fieldOffset);
+    auto wt = randomVector<dfloat>(N);
+    occa::memory o_x = platform->device.malloc(x.size() * sizeof(dfloat), x.data());
+    occa::memory o_wt = platform->device.malloc(wt.size() * sizeof(dfloat), wt.data());
+
+    const auto reference = weightedNorm2Many(x.data(), wt.data(), N, Nfields, fieldOffset, comm);
+    const auto value = linAlg->weightedNorm2Many(N, Nfields, fieldOffset, o_wt, o_x, comm);
+    const dfloat err = abs((value - reference) / reference);
+    if (rank == 0)
+      printf("linAlg errs (N=%d, Nfields=%d): %s=%g\n", N, Nfields, "weightedNorm2Many", err);
+    if (err > testTol)
+      CIFAIL;
+
+    o_x.free();
+    o_wt.free();
+  }
 
   if (platform->exitValue) {
     nrsFinalize(nrs);
