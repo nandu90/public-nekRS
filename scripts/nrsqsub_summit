@@ -25,6 +25,13 @@ let ntasks=nn
 time=$3
 backend=CUDA
 
+if [ $CPUONLY -eq 1 ]; then
+  backend=SERIAL
+  nn=$nodes*$gpu_per_node
+  let nn=2*$nodes
+  let ntasks=$nn*$cores_per_socket
+fi
+
 if [ ! -f $bin ]; then
   echo "Cannot find" $bin
   exit 1
