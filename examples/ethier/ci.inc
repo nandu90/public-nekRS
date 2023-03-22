@@ -394,10 +394,18 @@ void ciTestPointInterpolation(nrs_t *nrs, dfloat time, occa::kernel exactUVWPKer
 
   const auto verbosity = pointInterpolation_t::VerbosityLevel::Basic;
 
+  // Interpolation 0:
+  // Call find/eval on 0 points with a nullptr
+  occa::memory o_NULL;
+  auto interpNoop = pointInterpolation_t(nrs);
+  interpNoop.setPoints(0, o_NULL, o_NULL, o_NULL);
+  interpNoop.find(verbosity);
+  interpNoop.eval(nrs->NVfields, nrs->fieldOffset, o_Ue, 0, o_NULL);
+
   // Interpolation 1:
   // Interpolate onto points that coincide with the mesh, call findpts
   auto interpFluid = pointInterpolation_t(nrs);
-  interpFluid.addPoints(mesh->Nlocal, mesh->x, mesh->y, mesh->z);
+  interpFluid.setPoints(mesh->Nlocal, mesh->x, mesh->y, mesh->z);
   interpFluid.find(verbosity);
 
   auto o_PintFluid = platform->device.malloc(nrs->fieldOffset * sizeof(dfloat));
@@ -420,7 +428,7 @@ void ciTestPointInterpolation(nrs_t *nrs, dfloat time, occa::kernel exactUVWPKer
     auto nPoints = uniform_dist(e1);
     std::tie(pointsX[n], pointsY[n], pointsZ[n]) = generatePoints(nPoints, R);
     interpRand[n] = std::make_shared<pointInterpolation_t>(nrs);
-    interpRand[n]->addPoints(pointsX[n].size(), pointsX[n].data(), pointsY[n].data(), pointsZ[n].data());
+    interpRand[n]->setPoints(pointsX[n].size(), pointsX[n].data(), pointsY[n].data(), pointsZ[n].data());
     interpRand[n]->find(verbosity);
   }
 

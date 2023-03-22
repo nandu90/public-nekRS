@@ -329,7 +329,9 @@ void particleRHS(nrs_t *nrs, lpm_t *lpm, dfloat time, occa::memory o_y, void *us
 
   auto o_Uinterp = lpm->getInterpField("fluid_velocity");
 
-  fRHS(lpm->numParticles(), offset, o_y, o_Uinterp, o_ydot);
+  if(lpm->numParticles()){
+    fRHS(lpm->numParticles(), offset, o_y, o_Uinterp, o_ydot);
+  }
 }
 
 void UDF_Setup(nrs_t *nrs)

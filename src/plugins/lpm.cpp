@@ -544,7 +544,7 @@ void lpm_t::find(occa::memory o_yNew)
     o_yCoord = o_yNew + 1 * fieldOffset_ * sizeof(dfloat);
     o_zCoord = o_yNew + 2 * fieldOffset_ * sizeof(dfloat);
   }
-  interp->addPoints(numParticles(), o_xCoord, o_yCoord, o_zCoord);
+  interp->setPoints(numParticles(), o_xCoord, o_yCoord, o_zCoord);
   platform->timer.tic(timerName + "integrate::find", 1);
   interp->setTimerName(timerName + "integrate::find::");
   interp->find(verbosityLevel);
@@ -580,9 +580,11 @@ void lpm_t::integrateAB()
   abCoeff(dt.data(), tstep);
 
   // lag derivatives
-  for (int s = solverOrder; s > 1; s--) {
-    const auto Nbyte = (nDOFs_ * sizeof(dfloat)) * fieldOffset_;
-    o_ydot.copyFrom(o_ydot, Nbyte, (s - 1) * Nbyte, (s - 2) * Nbyte);
+  if (nParticles_ > 0) {
+    for (int s = solverOrder; s > 1; s--) {
+      const auto Nbyte = (nDOFs_ * sizeof(dfloat)) * fieldOffset_;
+      o_ydot.copyFrom(o_ydot, Nbyte, (s - 1) * Nbyte, (s - 2) * Nbyte);
+    }
   }
 
   // boostrap using RK method
@@ -591,14 +593,18 @@ void lpm_t::integrateAB()
     this->solverOrder = bootstrapRKOrder;
     integrateRK4();
     this->solverOrder = saveSolverOrder;
-    o_ydot.copyFrom(o_k, nDOFs_ * fieldOffset_ * sizeof(dfloat)); // for later lagging
+    if (fieldOffset_ > 0) {
+      o_ydot.copyFrom(o_k, nDOFs_ * fieldOffset_ * sizeof(dfloat)); // for later lagging
+    }
   }
   else {
     platform->timer.tic(timerName + "integrate::userRHS", 1);
     userRHS_(nrs, this, time, o_y, userdata_, o_ydot);
     platform->timer.toc(timerName + "integrate::userRHS");
 
-    nStagesSumManyKernel(nParticles_, fieldOffset_, solverOrder, nDOFs_, o_coeffAB, o_ydot, o_y);
+    if (nParticles_ > 0) {
+      nStagesSumManyKernel(nParticles_, fieldOffset_, solverOrder, nDOFs_, o_coeffAB, o_ydot, o_y);
+    }
   }
 }
 
@@ -640,7 +646,8 @@ void lpm_t::integrateRK1()
   dfloat rkCoeff = dt[0];
 
   // o_y += dt[0] * o_ydot
-  platform->linAlg->axpbyMany(nParticles_, nDOFs_, fieldOffset_, rkCoeff, o_k, 1.0, o_y);
+  if (nParticles_)
+    platform->linAlg->axpbyMany(nParticles_, nDOFs_, fieldOffset_, rkCoeff, o_k, 1.0, o_y);
 }
 
 void lpm_t::integrateRK2()
@@ -653,7 +660,8 @@ void lpm_t::integrateRK2()
   platform->timer.toc(timerName + "integrate::userRHS");
 
   // o_ytmp = o_y + dt[0] * o_k1
-  platform->linAlg->axpbyzMany(nParticles_, nDOFs_, fieldOffset_, 1.0, o_y, dt[0], o_k1, o_ytmp);
+  if (nParticles_)
+    platform->linAlg->axpbyzMany(nParticles_, nDOFs_, fieldOffset_, 1.0, o_y, dt[0], o_k1, o_ytmp);
 
   this->find(o_ytmp);
 
@@ -668,7 +676,8 @@ void lpm_t::integrateRK2()
   coeffRK[0] = 0.5 * dt[0], coeffRK[1] = 0.5 * dt[0];
   o_coeffRK.copyFrom(coeffRK.data(), coeffRK.size() * sizeof(dfloat));
 
-  this->nStagesSumManyKernel(nParticles_, fieldOffset_, solverOrder, nDOFs_, o_coeffRK, o_k, o_y);
+  if (nParticles_)
+    this->nStagesSumManyKernel(nParticles_, fieldOffset_, solverOrder, nDOFs_, o_coeffRK, o_k, o_y);
 }
 
 void lpm_t::integrateRK3()
@@ -682,7 +691,8 @@ void lpm_t::integrateRK3()
   platform->timer.toc(timerName + "integrate::userRHS");
 
   // o_ytmp = o_y + dt[0]/2 * o_k1
-  platform->linAlg->axpbyzMany(nParticles_, nDOFs_, fieldOffset_, 1.0, o_y, 0.5 * dt[0], o_k1, o_ytmp);
+  if (nParticles_)
+    platform->linAlg->axpbyzMany(nParticles_, nDOFs_, fieldOffset_, 1.0, o_y, 0.5 * dt[0], o_k1, o_ytmp);
 
   this->find(o_ytmp);
 
@@ -694,8 +704,10 @@ void lpm_t::integrateRK3()
   platform->timer.toc(timerName + "integrate::userRHS");
 
   // o_ytmp = o_y - dt[0] * o_k1 + 2 * dt[0] * o_k2
-  platform->linAlg->axpbyzMany(nParticles_, nDOFs_, fieldOffset_, 1.0, o_y, -dt[0], o_k1, o_ytmp);
-  platform->linAlg->axpbyMany(nParticles_, nDOFs_, fieldOffset_, 2.0 * dt[0], o_k2, 1.0, o_ytmp);
+  if (nParticles_) {
+    platform->linAlg->axpbyzMany(nParticles_, nDOFs_, fieldOffset_, 1.0, o_y, -dt[0], o_k1, o_ytmp);
+    platform->linAlg->axpbyMany(nParticles_, nDOFs_, fieldOffset_, 2.0 * dt[0], o_k2, 1.0, o_ytmp);
+  }
 
   this->find(o_ytmp);
 
@@ -710,7 +722,8 @@ void lpm_t::integrateRK3()
   coeffRK[0] = 1.0 / 6.0 * dt[0], coeffRK[1] = 2.0 / 3.0 * dt[0], coeffRK[2] = 1.0 / 6.0 * dt[0];
   o_coeffRK.copyFrom(coeffRK.data(), coeffRK.size() * sizeof(dfloat));
 
-  this->nStagesSumManyKernel(nParticles_, fieldOffset_, solverOrder, nDOFs_, o_coeffRK, o_k, o_y);
+  if (nParticles_)
+    this->nStagesSumManyKernel(nParticles_, fieldOffset_, solverOrder, nDOFs_, o_coeffRK, o_k, o_y);
 }
 
 void lpm_t::integrateRK4()
@@ -725,7 +738,8 @@ void lpm_t::integrateRK4()
   platform->timer.toc(timerName + "integrate::userRHS");
 
   // o_ytmp = o_y + dt[0]/2 * o_k1
-  platform->linAlg->axpbyzMany(nParticles_, nDOFs_, fieldOffset_, 1.0, o_y, 0.5 * dt[0], o_k1, o_ytmp);
+  if (nParticles_)
+    platform->linAlg->axpbyzMany(nParticles_, nDOFs_, fieldOffset_, 1.0, o_y, 0.5 * dt[0], o_k1, o_ytmp);
 
   this->find(o_ytmp);
 
@@ -737,7 +751,8 @@ void lpm_t::integrateRK4()
   platform->timer.toc(timerName + "integrate::userRHS");
 
   // o_ytmp = o_y + dt[0]/2 * o_k2
-  platform->linAlg->axpbyzMany(nParticles_, nDOFs_, fieldOffset_, 1.0, o_y, 0.5 * dt[0], o_k2, o_ytmp);
+  if (nParticles_)
+    platform->linAlg->axpbyzMany(nParticles_, nDOFs_, fieldOffset_, 1.0, o_y, 0.5 * dt[0], o_k2, o_ytmp);
 
   this->find(o_ytmp);
 
@@ -746,7 +761,8 @@ void lpm_t::integrateRK4()
   platform->timer.toc(timerName + "integrate::userRHS");
 
   // o_ytmp = o_y + dt[0] * o_k3
-  platform->linAlg->axpbyzMany(nParticles_, nDOFs_, fieldOffset_, 1.0, o_y, dt[0], o_k3, o_ytmp);
+  if (nParticles_)
+    platform->linAlg->axpbyzMany(nParticles_, nDOFs_, fieldOffset_, 1.0, o_y, dt[0], o_k3, o_ytmp);
 
   this->find(o_ytmp);
 
@@ -764,7 +780,8 @@ void lpm_t::integrateRK4()
   coeffRK[3] = 1.0 / 6.0 * dt[0];
   o_coeffRK.copyFrom(coeffRK.data(), coeffRK.size() * sizeof(dfloat));
 
-  this->nStagesSumManyKernel(nParticles_, fieldOffset_, solverOrder, nDOFs_, o_coeffRK, o_k, o_y);
+  if (nParticles_)
+    this->nStagesSumManyKernel(nParticles_, fieldOffset_, solverOrder, nDOFs_, o_coeffRK, o_k, o_y);
 }
 
 std::set<std::string> lpm_t::nonCoordinateOutputDOFs() const
@@ -946,7 +963,7 @@ void lpm_t::migrate()
     auto o_xcoord = getDOF("x");
     auto o_ycoord = getDOF("y");
     auto o_zcoord = getDOF("z");
-    interp->addPoints(this->numParticles(), o_xcoord, o_ycoord, o_zcoord);
+    interp->setPoints(this->numParticles(), o_xcoord, o_ycoord, o_zcoord);
   }
 
   // disable findpts kernel timer for this call
@@ -1111,43 +1128,48 @@ void lpm_t::migrate()
   auto o_yOld = this->o_y;
   auto o_ydotOld = this->o_ydot;
 
-  handleAllocation(newFieldOffset);
-
-  std::vector<dlong> migrateMap(this->numParticles(), -1);
-  // map local particles to new location first
   ctr = 0;
-  for (int pid = 0; pid < this->numParticles(); ++pid) {
-    if (data.proc[pid] == platform->comm.mpiRank && data.code[pid] != findpts::CODE_NOT_FOUND) {
-      migrateMap[pid] = ctr;
-      ctr++;
+  if (newFieldOffset) {
+
+    handleAllocation(newFieldOffset);
+
+    if (this->numParticles()) {
+      std::vector<dlong> migrateMap(this->numParticles(), -1);
+      // map local particles to new location first
+      for (int pid = 0; pid < this->numParticles(); ++pid) {
+        if (data.proc[pid] == platform->comm.mpiRank && data.code[pid] != findpts::CODE_NOT_FOUND) {
+          migrateMap[pid] = ctr;
+          ctr++;
+        }
+      }
+
+      if (o_migrateMap.size() < migrateMap.size() * sizeof(dlong)) {
+        if (o_migrateMap.size())
+          o_migrateMap.free();
+        o_migrateMap = platform->device.malloc(migrateMap.size() * sizeof(dlong));
+      }
+      if (this->numParticles() > 0) {
+        o_migrateMap.copyFrom(migrateMap.data(), migrateMap.size() * sizeof(dlong));
+      }
+
+      remapParticlesKernel(this->numParticles(),
+                           fieldOffset_,
+                           newFieldOffset,
+                           nProps_,
+                           nInterpFields_,
+                           nDOFs_,
+                           solverOrder,
+                           o_migrateMap,
+                           o_yOld,
+                           o_ydotOld,
+                           o_propOld,
+                           o_interpFldOld,
+                           this->o_y,
+                           this->o_ydot,
+                           this->o_prop,
+                           this->o_interpFld);
     }
   }
-
-  if (o_migrateMap.size() < migrateMap.size() * sizeof(dlong)) {
-    if (o_migrateMap.size())
-      o_migrateMap.free();
-    o_migrateMap = platform->device.malloc(migrateMap.size() * sizeof(dlong));
-  }
-  if (this->numParticles() > 0) {
-    o_migrateMap.copyFrom(migrateMap.data(), migrateMap.size() * sizeof(dlong));
-  }
-
-  remapParticlesKernel(this->numParticles(),
-                       fieldOffset_,
-                       newFieldOffset,
-                       nProps_,
-                       nInterpFields_,
-                       nDOFs_,
-                       solverOrder,
-                       o_migrateMap,
-                       o_yOld,
-                       o_ydotOld,
-                       o_propOld,
-                       o_interpFldOld,
-                       this->o_y,
-                       this->o_ydot,
-                       this->o_prop,
-                       this->o_interpFld);
 
   // Unpack received data into device arrays
   if (nReceived) {
@@ -1204,10 +1226,14 @@ void lpm_t::migrate()
   nParticles_ = newNParticles;
   fieldOffset_ = newFieldOffset;
 
-  o_yOld.free();
-  o_ydotOld.free();
-  o_propOld.free();
-  o_interpFldOld.free();
+  if (o_yOld.size())
+    o_yOld.free();
+  if (o_ydotOld.size())
+    o_ydotOld.free();
+  if (o_propOld.size())
+    o_propOld.free();
+  if (o_interpFldOld.size())
+    o_interpFldOld.free();
 
   // do an additional findpts call
   if (timerLevel != TimerLevel::None) {
@@ -1218,7 +1244,7 @@ void lpm_t::migrate()
     auto o_xcoord = getDOF("x");
     auto o_ycoord = getDOF("y");
     auto o_zcoord = getDOF("z");
-    interp->addPoints(this->numParticles(), o_xcoord, o_ycoord, o_zcoord);
+    interp->setPoints(this->numParticles(), o_xcoord, o_ycoord, o_zcoord);
   }
 
   // disable findpts kernel timer for this call
@@ -1252,19 +1278,19 @@ void lpm_t::addParticles(int newNParticles,
   const auto expectedYSize = newNParticles * nDOFs_;
   const auto expectedPropSize = newNParticles * nProps_;
   const auto expectedYdotSize = solverOrder * newNParticles * nDOFs_;
-  nrsCheck(yNewPart.size() != expectedYSize,
+  nrsCheck(yNewPart.size() < expectedYSize,
            platform->comm.mpiComm,
            EXIT_FAILURE,
            "yNewPart size is %ld but expected %d words!\n",
            yNewPart.size(),
            expectedYSize);
-  nrsCheck(propNewPart.size() != expectedPropSize,
+  nrsCheck(propNewPart.size() < expectedPropSize,
            platform->comm.mpiComm,
            EXIT_FAILURE,
            "propNewPart size is %ld but expected %d words!\n",
            propNewPart.size(),
            expectedPropSize);
-  nrsCheck(ydotNewPart.size() != expectedYdotSize,
+  nrsCheck(ydotNewPart.size() < expectedYdotSize,
            platform->comm.mpiComm,
            EXIT_FAILURE,
            "ydotNewPart size is %ld but expected %d words!\n",
@@ -1312,19 +1338,19 @@ void lpm_t::addParticles(int newNParticles,
   auto expectedYSize = incomingOffset * nDOFs_ * sizeof(dfloat);
   auto expectedPropSize = incomingOffset * nProps_ * sizeof(dfloat);
   auto expectedYdotSize = solverOrder * incomingOffset * nDOFs_ * sizeof(dfloat);
-  nrsCheck(o_yNewPart.size() != expectedYSize,
+  nrsCheck(o_yNewPart.size() < expectedYSize,
            platform->comm.mpiComm,
            EXIT_FAILURE,
            "o_yNewPart size is %ld but expected %ld bytes!\n",
            o_yNewPart.size(),
            expectedYSize);
-  nrsCheck(o_propNewPart.size() != expectedPropSize,
+  nrsCheck(o_propNewPart.size() < expectedPropSize,
            platform->comm.mpiComm,
            EXIT_FAILURE,
            "o_propNewPart size is %ld but expected %ld bytes!\n",
            o_propNewPart.size(),
            expectedPropSize);
-  nrsCheck(o_ydotNewPart.size() != expectedYdotSize,
+  nrsCheck(o_ydotNewPart.size() < expectedYdotSize,
            platform->comm.mpiComm,
            EXIT_FAILURE,
            "o_ydotNewPart size is %ld but expected %ld bytes!\n",
@@ -1335,80 +1361,115 @@ void lpm_t::addParticles(int newNParticles,
   std::vector<dlong> insertMap(newNParticles, 0);
 
   // remainingMap[id] = id for existing particles
-  std::iota(remainingMap.begin(), remainingMap.end(), 0);
-  if (o_remainingMap.size() < this->nParticles_ * sizeof(dlong)) {
-    if (o_remainingMap.size())
-      o_remainingMap.free();
-    o_remainingMap = platform->device.malloc(this->nParticles_ * sizeof(dlong));
+  if (this->nParticles_) {
+    std::iota(remainingMap.begin(), remainingMap.end(), 0);
+    if (o_remainingMap.size() < this->nParticles_ * sizeof(dlong)) {
+      if (o_remainingMap.size())
+        o_remainingMap.free();
+      o_remainingMap = platform->device.malloc(this->nParticles_ * sizeof(dlong));
+    }
+    o_remainingMap.copyFrom(remainingMap.data(), this->nParticles_ * sizeof(dlong));
   }
-  o_remainingMap.copyFrom(remainingMap.data(), this->nParticles_ * sizeof(dlong));
 
   // insertMap[id] = id + nParticles_ for incoming particles
-  std::iota(insertMap.begin(), insertMap.end(), this->nParticles_);
-  if (o_insertMap.size() < newNParticles * sizeof(dlong)) {
-    if (o_insertMap.size())
-      o_insertMap.free();
-    o_insertMap = platform->device.malloc(newNParticles * sizeof(dlong));
+  if (newNParticles) {
+    std::iota(insertMap.begin(), insertMap.end(), this->nParticles_);
+    if (o_insertMap.size() < newNParticles * sizeof(dlong)) {
+      if (o_insertMap.size())
+        o_insertMap.free();
+      o_insertMap = platform->device.malloc(newNParticles * sizeof(dlong));
+    }
+    o_insertMap.copyFrom(insertMap.data(), newNParticles * sizeof(dlong));
   }
-  o_insertMap.copyFrom(insertMap.data(), newNParticles * sizeof(dlong));
 
   auto o_propOld = this->o_prop;
   auto o_interpFldOld = this->o_interpFld;
   auto o_yOld = this->o_y;
   auto o_ydotOld = this->o_ydot;
 
-  handleAllocation(newOffset);
+  if (newOffset) {
+    handleAllocation(newOffset);
 
-  // dummy arrays for remapParticlesKernel for new particles
-  occa::memory o_interpFldDummy;
-  if (nInterpFields_) {
-    o_interpFldDummy = platform->device.malloc(incomingOffset * nInterpFields_ * sizeof(dfloat));
+    // dummy arrays for remapParticlesKernel for new particles
+    occa::memory o_interpFldDummy;
+    if (nInterpFields_) {
+      o_interpFldDummy = platform->device.malloc(incomingOffset * nInterpFields_ * sizeof(dfloat));
+    }
+
+    if (this->numParticles()) {
+      // map existing particles to new data
+      remapParticlesKernel(this->numParticles(),
+                           fieldOffset_,
+                           newOffset,
+                           nProps_,
+                           nInterpFields_,
+                           nDOFs_,
+                           solverOrder,
+                           o_remainingMap,
+                           o_yOld,
+                           o_ydotOld,
+                           o_propOld,
+                           o_interpFldOld,
+                           o_y,
+                           o_ydot,
+                           o_prop,
+                           o_interpFld);
+    }
+
+    if (newNParticles) {
+      // map new particles to new data
+      remapParticlesKernel(newNParticles,
+                           incomingOffset,
+                           newOffset,
+                           nProps_,
+                           nInterpFields_,
+                           nDOFs_,
+                           solverOrder,
+                           o_insertMap,
+                           o_yNewPart,
+                           o_ydotNewPart,
+                           o_propNewPart,
+                           o_interpFldDummy,
+                           o_y,
+                           o_ydot,
+                           o_prop,
+                           o_interpFld);
+    }
+    o_interpFldDummy.free();
   }
 
-  // map existing particles to new data
-  remapParticlesKernel(this->numParticles(),
-                       fieldOffset_,
-                       newOffset,
-                       nProps_,
-                       nInterpFields_,
-                       nDOFs_,
-                       solverOrder,
-                       o_remainingMap,
-                       o_yOld,
-                       o_ydotOld,
-                       o_propOld,
-                       o_interpFldOld,
-                       o_y,
-                       o_ydot,
-                       o_prop,
-                       o_interpFld);
-
-  // map new particles to new data
-  remapParticlesKernel(newNParticles,
-                       incomingOffset,
-                       newOffset,
-                       nProps_,
-                       nInterpFields_,
-                       nDOFs_,
-                       solverOrder,
-                       o_insertMap,
-                       o_yNewPart,
-                       o_ydotNewPart,
-                       o_propNewPart,
-                       o_interpFldDummy,
-                       o_y,
-                       o_ydot,
-                       o_prop,
-                       o_interpFld);
-
-  o_propOld.free();
-  o_interpFldOld.free();
-  o_yOld.free();
-  o_ydotOld.free();
-  o_interpFldDummy.free();
+  if (o_propOld.size())
+    o_propOld.free();
+  if (o_interpFldOld.size())
+    o_interpFldOld.free();
+  if (o_yOld.size())
+    o_yOld.free();
+  if (o_ydotOld.size())
+    o_ydotOld.free();
 
   nParticles_ += newNParticles;
   fieldOffset_ = newOffset;
+
+  // update findpts results for newly added particles
+  {
+    auto o_xcoord = getDOF("x");
+    auto o_ycoord = getDOF("y");
+    auto o_zcoord = getDOF("z");
+    interp->setPoints(this->numParticles(), o_xcoord, o_ycoord, o_zcoord);
+
+    if (timerLevel != TimerLevel::None) {
+      platform->timer.tic(timerName + "addParticles::find", 1);
+    }
+
+    // disable findpts kernel timer for this call
+    auto saveLevel = getTimerLevel();
+    setTimerLevel(TimerLevel::None);
+    interp->find(VerbosityLevel::None);
+    setTimerLevel(saveLevel);
+    if (timerLevel != TimerLevel::None) {
+      platform->timer.toc(timerName + "addParticles::find");
+    }
+  }
 
   if (timerLevel != TimerLevel::None) {
     platform->timer.toc(timerName + "addParticles");
@@ -1453,12 +1514,14 @@ void lpm_t::deleteParticles()
   }
 
   const auto Nbytes = this->numParticles() * sizeof(dlong);
-  if (o_remainingMap.size() < Nbytes) {
-    if (o_remainingMap.size())
-      o_remainingMap.free();
-    o_remainingMap = platform->device.malloc(Nbytes);
+  if (Nbytes > 0) {
+    if (o_remainingMap.size() < Nbytes) {
+      if (o_remainingMap.size())
+        o_remainingMap.free();
+      o_remainingMap = platform->device.malloc(Nbytes);
+    }
+    o_remainingMap.copyFrom(remainingMap.data(), Nbytes);
   }
-  o_remainingMap.copyFrom(remainingMap.data(), Nbytes);
 
   auto o_propOld = this->o_prop;
   auto o_interpFldOld = this->o_interpFld;
@@ -1468,32 +1531,59 @@ void lpm_t::deleteParticles()
   const auto newNParticles = this->numParticles() - nDelete;
   const auto newOffset = computeFieldOffset(newNParticles);
 
-  handleAllocation(newOffset);
+  if (newOffset) {
+    handleAllocation(newOffset);
 
-  remapParticlesKernel(this->numParticles(),
-                       fieldOffset_,
-                       newOffset,
-                       nProps_,
-                       nInterpFields_,
-                       nDOFs_,
-                       solverOrder,
-                       o_remainingMap,
-                       o_yOld,
-                       o_ydotOld,
-                       o_propOld,
-                       o_interpFldOld,
-                       o_y,
-                       o_ydot,
-                       o_prop,
-                       o_interpFld);
+    remapParticlesKernel(this->numParticles(),
+                         fieldOffset_,
+                         newOffset,
+                         nProps_,
+                         nInterpFields_,
+                         nDOFs_,
+                         solverOrder,
+                         o_remainingMap,
+                         o_yOld,
+                         o_ydotOld,
+                         o_propOld,
+                         o_interpFldOld,
+                         o_y,
+                         o_ydot,
+                         o_prop,
+                         o_interpFld);
+  }
 
-  o_propOld.free();
-  o_interpFldOld.free();
-  o_yOld.free();
-  o_ydotOld.free();
+  if (o_propOld.size())
+    o_propOld.free();
+  if (o_interpFldOld.size())
+    o_interpFldOld.free();
+  if (o_yOld.size())
+    o_yOld.free();
+  if (o_ydotOld.size())
+    o_ydotOld.free();
 
   nParticles_ = newNParticles;
   fieldOffset_ = newOffset;
+
+  // update findpts results
+  {
+    auto o_xcoord = getDOF("x");
+    auto o_ycoord = getDOF("y");
+    auto o_zcoord = getDOF("z");
+    interp->setPoints(this->numParticles(), o_xcoord, o_ycoord, o_zcoord);
+
+    if (timerLevel != TimerLevel::None) {
+      platform->timer.tic(timerName + "deleteParticles::find", 1);
+    }
+
+    // disable findpts kernel timer for this call
+    auto saveLevel = getTimerLevel();
+    setTimerLevel(TimerLevel::None);
+    interp->find(VerbosityLevel::None);
+    setTimerLevel(saveLevel);
+    if (timerLevel != TimerLevel::None) {
+      platform->timer.toc(timerName + "deleteParticles::find");
+    }
+  }
 
   if (timerLevel != TimerLevel::None) {
     platform->timer.toc(timerName + "deleteParticles");
@@ -1523,7 +1613,7 @@ void lpm_t::writeFld()
     auto o_xcoord = getDOF("x");
     auto o_ycoord = getDOF("y");
     auto o_zcoord = getDOF("z");
-    interp->addPoints(this->numParticles(), o_xcoord, o_ycoord, o_zcoord);
+    interp->setPoints(this->numParticles(), o_xcoord, o_ycoord, o_zcoord);
 
     // disable findpts kernel timer for this call
     auto saveLevel = getTimerLevel();

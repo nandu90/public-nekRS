@@ -152,10 +152,10 @@ void updateInterpPoints(nrs_t *nrs)
   // add points (use GPU version)
   for (dlong sess = 0; sess < nsessions; ++sess) {
     const auto nPoint = (sess == sessionID) ? 0 : neknek->npt;
-    sessionInterpolators[sess]->addPoints(nPoint, neknek->o_x, neknek->o_y, neknek->o_z);
+    sessionInterpolators[sess]->setPoints(nPoint, neknek->o_x, neknek->o_y, neknek->o_z);
   }
 
-  neknek->interpolator->addPoints(neknek->npt, neknek->o_x, neknek->o_y, neknek->o_z);
+  neknek->interpolator->setPoints(neknek->npt, neknek->o_x, neknek->o_y, neknek->o_z);
 
   const auto warningLevel = pointInterpolation_t::VerbosityLevel::Detailed;
   for (dlong sess = 0; sess < nsessions; ++sess) {
@@ -265,10 +265,10 @@ void findInterpPoints(nrs_t *nrs)
   // add points
   for (dlong sess = 0; sess < nsessions; ++sess) {
     const auto nPoint = (sess == sessionID) ? 0 : numPoints;
-    sessionInterpolators[sess]->addPoints(nPoint, neknekX.data(), neknekY.data(), neknekZ.data());
+    sessionInterpolators[sess]->setPoints(nPoint, neknekX.data(), neknekY.data(), neknekZ.data());
   }
 
-  neknek->interpolator->addPoints(numPoints, neknekX.data(), neknekY.data(), neknekZ.data());
+  neknek->interpolator->setPoints(numPoints, neknekX.data(), neknekY.data(), neknekZ.data());
 
   const auto warningLevel = pointInterpolation_t::VerbosityLevel::Detailed;
   for (dlong sess = 0; sess < nsessions; ++sess) {

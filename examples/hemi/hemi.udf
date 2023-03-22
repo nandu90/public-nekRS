@@ -6,8 +6,18 @@
 #include "linspaceVector.hpp"
 
 static dfloat Stk;
-static dlong nParticles;
-static dlong nParticlesGlobal;
+static dlong nParticlesInject;
+static dlong injectionFrequency;
+static occa::memory o_yNewPart; // for adding new particles
+static occa::memory o_propNewPart;
+
+static dfloat xMin;
+static dfloat yMin;
+static dfloat zMin;
+static dfloat xMax;
+static dfloat yMax;
+static dfloat zMax;
+
 static lpm_t* particles = nullptr;
 
 @oklBegin
@@ -27,7 +37,8 @@ void UDF_Setup0(MPI_Comm comm, setupAide &options)
   MPI_Comm_rank(comm, &rank);
 
   platform->par->extract("casedata", "stk", Stk);
-  platform->par->extract("casedata", "nparticles", nParticlesGlobal);
+  platform->par->extract("casedata", "nparticlesinject", nParticlesInject);
+  platform->par->extract("casedata", "injectionfrequency", injectionFrequency);
 
 }
 
@@ -40,12 +51,51 @@ void userRHS(nrs_t *nrs, lpm_t *lpm, dfloat time, occa::memory o_y, void *userda
 
   auto o_Uinterp = lpm->getInterpField("fluid_velocity");
 
-  particleRHS(lpm->numParticles(), offset, o_y, lpm->o_prop, o_Uinterp, o_ydot);
+  if(lpm->numParticles()){
+    particleRHS(lpm->numParticles(), offset, o_y, lpm->o_prop, o_Uinterp, o_ydot);
+  }
+}
+
+// generate uniform points distributed at inflow
+auto generateInflowPoints(nrs_t * nrs)
+{
+  auto numGlobalParticles = particles->numGlobalParticles();
+
+  std::vector<dfloat> xPart, yPart, zPart;
+  
+  auto mesh = nrs->meshV;
+
+  const auto py = static_cast<int>(std::round(std::sqrt(nParticlesInject)));
+  const auto pz = py;
+
+  const auto yPoint = linspace<dfloat>(yMin, yMax, py);
+  const auto zPoint = linspace<dfloat>(zMin, zMax, pz);
+
+  for(auto&& y : yPoint) {
+    for(auto&& z : zPoint) {
+      if(numGlobalParticles % platform->comm.mpiCommSize == platform->comm.mpiRank) {
+        xPart.push_back(xMin);
+        yPart.push_back(y);
+        zPart.push_back(z);
+      }
+      numGlobalParticles++;
+    }
+  }
+
+  return std::make_tuple(xPart, yPart, zPart);
 }
 
 void UDF_Setup(nrs_t *nrs)
 {
   auto * mesh = nrs->meshV;
+  
+  xMin = platform->linAlg->min(mesh->Nlocal, mesh->o_x, platform->comm.mpiComm);
+  yMin = platform->linAlg->min(mesh->Nlocal, mesh->o_y, platform->comm.mpiComm);
+  zMin = platform->linAlg->min(mesh->Nlocal, mesh->o_z, platform->comm.mpiComm);
+
+  xMax = platform->linAlg->max(mesh->Nlocal, mesh->o_x, platform->comm.mpiComm);
+  yMax = platform->linAlg->max(mesh->Nlocal, mesh->o_y, platform->comm.mpiComm);
+  zMax = platform->linAlg->max(mesh->Nlocal, mesh->o_z, platform->comm.mpiComm);
 
   particles = new lpm_t(nrs, 0.0);
   particles->setUserRHS(userRHS);
@@ -61,46 +111,13 @@ void UDF_Setup(nrs_t *nrs)
   // register Stokes number as a property
   particles->registerProp("stokes_number");
 
-  const auto xMin = platform->linAlg->min(mesh->Nlocal, mesh->o_x, platform->comm.mpiComm);
-  const auto yMin = platform->linAlg->min(mesh->Nlocal, mesh->o_y, platform->comm.mpiComm);
-  const auto zMin = platform->linAlg->min(mesh->Nlocal, mesh->o_z, platform->comm.mpiComm);
-
-  const auto xMax = platform->linAlg->max(mesh->Nlocal, mesh->o_x, platform->comm.mpiComm);
-  const auto yMax = platform->linAlg->max(mesh->Nlocal, mesh->o_y, platform->comm.mpiComm);
-  const auto zMax = platform->linAlg->max(mesh->Nlocal, mesh->o_z, platform->comm.mpiComm);
-
-  // uniformly distribute particles inside domain
-  // in a round-robin fashion
-  int px = static_cast<int>(std::round(std::cbrt(nParticlesGlobal)));
-  int py = px;
-  int pz = px;
-
-  auto xPoint = linspace<dfloat>(xMin, xMax, px);
-  auto yPoint = linspace<dfloat>(yMin, yMax, py);
-  auto zPoint = linspace<dfloat>(zMin, zMax, pz);
-
-  std::vector<dfloat> xPart, yPart, zPart;
-
-  int pid = 0;
-  for(auto&& x : xPoint) {
-    for(auto&& y : yPoint) {
-      for(auto&& z : zPoint) {
-        if(pid % platform->comm.mpiCommSize == platform->comm.mpiRank) {
-          xPart.push_back(x);
-          yPart.push_back(y);
-          zPart.push_back(z);
-        }
-        pid++;
-      }
-    }
-  }
-
-  nParticles = xPart.size();
+  auto [xPart, yPart, zPart] = generateInflowPoints(nrs);
+  const dlong nParticles = xPart.size();
 
   // interpolate initial fluid velocity onto particle positions
   std::vector<dfloat> particleU0(nrs->NVfields * nParticles);
   auto interpolator = pointInterpolation_t(nrs);
-  interpolator.addPoints(nParticles, xPart.data(), yPart.data(), zPart.data());
+  interpolator.setPoints(nParticles, xPart.data(), yPart.data(), zPart.data());
   interpolator.find();
 
   interpolator.eval(nrs->NVfields, nrs->fieldOffset, nrs->U, nParticles, particleU0.data());
@@ -132,21 +149,78 @@ void UDF_Setup(nrs_t *nrs)
 
   // set Stokes number
   platform->linAlg->fill(nParticles, Stk, particles->o_prop);
+}
 
+void addNewParticles(nrs_t* nrs, dfloat time, int tstep)
+{
+  auto numGlobalParticles = particles->numGlobalParticles();
+
+  auto [xPart, yPart, zPart] = generateInflowPoints(nrs);
+  const int nPartAdd = xPart.size();
+
+  const auto NbytesNewYPart = nPartAdd * particles->nDOFs() * sizeof(dfloat);
+  if(o_yNewPart.size() < NbytesNewYPart){
+    if(o_yNewPart.size()) o_yNewPart.free();
+    o_yNewPart = platform->device.malloc(NbytesNewYPart);
+  }
+
+  const auto NbytesNewPropPart = nPartAdd * particles->nProps() * sizeof(dfloat);
+  if(o_propNewPart.size() < NbytesNewPropPart){
+    if(o_propNewPart.size()) o_propNewPart.free();
+    o_propNewPart = platform->device.malloc(NbytesNewPropPart);
+  }
+
+  auto o_xPart = o_yNewPart + 0 * nPartAdd * sizeof(dfloat);
+  auto o_yPart = o_yNewPart + 1 * nPartAdd * sizeof(dfloat);
+  auto o_zPart = o_yNewPart + 2 * nPartAdd * sizeof(dfloat);
+  auto o_UPart = o_yNewPart + 3 * nPartAdd * sizeof(dfloat);
+
+  o_xPart.copyFrom(xPart.data(), nPartAdd * sizeof(dfloat));
+  o_yPart.copyFrom(yPart.data(), nPartAdd * sizeof(dfloat));
+  o_zPart.copyFrom(zPart.data(), nPartAdd * sizeof(dfloat));
+
+  // set property with Stokes number
+  platform->linAlg->fill(nPartAdd, Stk, o_propNewPart);
+  
+  // interpolate fluid velocity onto new particle positions (set initial velocity as fluid velocity)
+  auto interpolator = pointInterpolation_t(nrs);
+  interpolator.setPoints(nPartAdd, xPart.data(), yPart.data(), zPart.data());
+  interpolator.find();
+
+  interpolator.eval(nrs->NVfields, nrs->fieldOffset, nrs->o_U, nPartAdd, o_UPart);
+
+  particles->addParticles(nPartAdd, o_yNewPart, o_propNewPart);
 }
 
 void UDF_ExecuteStep(nrs_t *nrs, dfloat time, int tstep)
 {
   particles->integrate(time);
 
+  if(tstep % injectionFrequency == 0){
+    addNewParticles(nrs, time, tstep);
+  }
+
+  // Perform a particle migration if either condition is true:
   // If more than 10% of particles cannot be evaluated on the owning processor, migrate particles to the correct position.
+  // If more than 10% of particles are unfound, migrate particles to the correct position.
   const auto migrationFraction = 0.1;
   const auto numNonLocalParticles = particles->numNonLocalParticles();
+  const auto numUnfoundParticles = particles->numUnfoundParticles();
   
-  auto nonLocalParticleFraction = particles->numParticles() ? numNonLocalParticles/particles->numParticles() : 0.0;
-  MPI_Allreduce(MPI_IN_PLACE, &nonLocalParticleFraction, 1, MPI_DFLOAT, MPI_MAX, platform->comm.mpiComm);
+  double nonLocalParticleFraction = 0.0;
+  double unfoundParticleFraction = 0.0;
+  if(particles->numParticles()) {
+    nonLocalParticleFraction = (double) numNonLocalParticles / (double) particles->numParticles();
+    unfoundParticleFraction = (double) numUnfoundParticles / (double) particles->numParticles();
+  }
+
+  std::array<dfloat,2> maxFractions = {nonLocalParticleFraction, unfoundParticleFraction};
+  MPI_Allreduce(MPI_IN_PLACE, maxFractions.data(), maxFractions.size(), MPI_DFLOAT, MPI_MAX, platform->comm.mpiComm);
+  if(platform->comm.mpiRank == 0){
+    printf("nonLocalParticleFraction = %f, unfoundParticleFraction = %f\n", maxFractions[0], maxFractions[1]);
+  }
   
-  if(nonLocalParticleFraction > migrationFraction){
+  if((maxFractions[0] > migrationFraction) || (maxFractions[1] > migrationFraction)){
     particles->migrate();
   }
 
