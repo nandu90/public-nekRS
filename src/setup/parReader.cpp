@@ -993,8 +993,11 @@ void parseLinearSolver(const int rank, setupAide &options, inipp::Ini *par, std:
       p_solver = "PCG+FLEXIBLE";
     else
       p_solver = "PCG";
+
     if (p_solver.find("block") != std::string::npos)
       options.setArgs(parSectionName + "BLOCK SOLVER", "TRUE");
+    else
+      options.setArgs(parSectionName + "BLOCK SOLVER", "FALSE");
   }
   else if (p_solver.find("user") != std::string::npos) {
     p_solver = "USER";
