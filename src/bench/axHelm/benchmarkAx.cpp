@@ -295,7 +295,7 @@ occa::kernel benchmarkAx(int Nelements,
       const auto tol = 400. * std::numeric_limits<FPType>::epsilon();
       if (err > tol) {
         if (platform->comm.mpiRank == 0 && verbosity > 1) {
-          std::cout << "Ignore kernel " << kernelVariant
+          std::cout << "Ax: Ignore kernel " << kernelVariant
                     << " because error of " << err
                     << " is too large compared to reference\n";
         }
