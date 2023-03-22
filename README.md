@@ -17,7 +17,7 @@ Capabilities:
 * Incompressible and low Mach-number Navier-Stokes + scalar transport 
 * CG-SEM using curvilinear conformal hexaheadral elements 
 * Variable time step 2nd/3rd order semi-implicit time integration
-* MPI+X hybrid parallelism supporting CPU, CUDA, HIP, DPC++ and OPENCL
+* MPI+X hybrid parallelism supporting CPU, CUDA, HIP and OPENCL
 * Various boundary conditions
 * Conjugate fluid-solid heat transfer
 * LES and RANS turbulence models

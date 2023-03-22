@@ -12,7 +12,6 @@
 * Flexible time averaging 
 * on boundary condition (aligned)
 * Extrapolation initialGuess method
-* DPCPP backend to support Intel GPUs
 * Scaleable JIT compilation
 * More examples
 * Various bug fixes 
