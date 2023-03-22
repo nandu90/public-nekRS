@@ -102,6 +102,8 @@ int main(int argc, char** argv)
   const int Nq = N + 1;
   const int Np = Nq * Nq * Nq;
 
+  options.setArgs("POLYNOMIAL DEGREE", std::to_string(N));
+
   platform = platform_t::getInstance(options, MPI_COMM_WORLD, MPI_COMM_WORLD);
   platform->options.setArgs("BUILD ONLY", "FALSE");
 
