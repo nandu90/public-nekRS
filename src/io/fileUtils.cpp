@@ -61,12 +61,10 @@ void fileBcast(const fs::path &srcPathIn,
   }
 
   const auto path0 = fs::current_path();
-  auto srcPath = srcPathIn;
-  if(srcPathIn.is_absolute()) {
-    fs::current_path(srcPathIn.parent_path()); 
-    srcPath = fs::relative(srcPathIn, fs::current_path());
-  }
 
+  auto srcPath = fs::canonical(srcPathIn);
+  fs::current_path(srcPath.parent_path()); 
+  srcPath = fs::relative(srcPath, fs::current_path());
 
   int localRank;
   const int localRankRoot = 0;
