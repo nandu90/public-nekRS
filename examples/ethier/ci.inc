@@ -880,7 +880,7 @@ void ciTestErrors(nrs_t *nrs,
     }
 
     // check flop count
-    const auto expectedOperations = 125188214670; // from nvprof
+    const double expectedOperations = 125188214670; // from nvprof
     const auto accuracy = 0.035;                  // observed 3% error in result
     const auto operations = platform->flopCounter->get(platform->comm.mpiComm);
     if (operations >= (1 + accuracy) * expectedOperations ||
