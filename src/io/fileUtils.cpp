@@ -55,16 +55,7 @@ void fileBcast(const fs::path &srcPathIn,
   int rank;
   MPI_Comm_rank(comm, &rank);
 
-  if(rank == 0) {
-    nrsCheck( !fs::exists(srcPathIn), MPI_COMM_SELF, EXIT_FAILURE, 
-             "Cannot find %s!\n", std::string(srcPathIn).c_str());
-  }
-
   const auto path0 = fs::current_path();
-
-  auto srcPath = fs::canonical(srcPathIn);
-  fs::current_path(srcPath.parent_path()); 
-  srcPath = fs::relative(srcPath, fs::current_path());
 
   int localRank;
   const int localRankRoot = 0;
@@ -87,16 +78,25 @@ void fileBcast(const fs::path &srcPathIn,
       MPI_Comm_rank(commNode, &nodeRank);
   }
 
+
   std::vector<std::string> fileList;
   if (nodeRank == nodeRankRoot) {
+
+    nrsCheck(!fs::exists(srcPathIn), MPI_COMM_SELF, EXIT_FAILURE, 
+             "Cannot find %s!\n", std::string(srcPathIn).c_str());
+
+    const auto srcPathCanonical = fs::canonical(srcPathIn);
+    fs::current_path(srcPathCanonical.parent_path()); 
+    const auto srcPath = fs::relative(srcPathCanonical, fs::current_path());
+
     if (!fs::is_directory((srcPath))) {
       fileList.push_back(srcPath);
     } else {
       for (const auto &dirEntry : fs::recursive_directory_iterator(srcPath)) {
-        if (dirEntry.is_regular_file())
-          fileList.push_back(dirEntry.path());
+        if (dirEntry.is_regular_file()) fileList.push_back(dirEntry.path());
       }
     }
+
   }
   int nFiles = (nodeRank == nodeRankRoot) ? fileList.size() : 0;
   MPI_Bcast(&nFiles, 1, MPI_INT, nodeRankRoot, comm);
@@ -139,8 +139,7 @@ void fileBcast(const fs::path &srcPathIn,
       MPI_Bcast(fileBuf, bufSize, MPI_BYTE, nodeRankRoot, commNode);
 
       if (nodeRank == nodeRankRoot && verbose)
-        std::cout << __func__ << ": " << file << " -> " << filePath << " (" << bufSize << " bytes)"
-                  << std::endl;
+        std::cout << __func__ << ": " << file << " -> " << std::flush;
     }
 
     // write file collectively to node-local storage;
@@ -173,6 +172,12 @@ void fileBcast(const fs::path &srcPathIn,
     if (localRank == localRankRoot) {
       fileSync(filePath.c_str());
       fs::permissions(filePath, fs::perms::owner_all);
+    }
+
+    if (commNode != MPI_COMM_NULL) {
+      if (nodeRank == nodeRankRoot && verbose) {
+        std::cout << fs::canonical(filePath) << " (" << bufSize << " bytes)" << std::endl;
+      }
     }
   }
 

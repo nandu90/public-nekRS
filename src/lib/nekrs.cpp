@@ -174,6 +174,7 @@ void setup(MPI_Comm commg_in, MPI_Comm comm_in,
 
   platform->flopCounter->clear();
 
+#if 1
   if(platform->cacheBcast) { 
     MPI_Barrier(platform->comm.mpiComm); 
 
@@ -184,6 +185,7 @@ void setup(MPI_Comm commg_in, MPI_Comm comm_in,
         fs::remove_all(entry.path());
     }
   }
+#endif
 
 }
 

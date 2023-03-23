@@ -91,6 +91,10 @@ void compileKernels() {
     printf("JIT compiling kernels (this may take awhile if they are not in cache) ...\n");
   fflush(stdout);
 
+
+  platform->kernels.compile();
+
+  // compile ogs kernels
   {
     const bool buildNodeLocal = platform->cacheLocal;
     const bool buildOnly = platform->options.compareArgs("BUILD ONLY", "TRUE");
@@ -103,8 +107,6 @@ void compileKernels() {
       };
     oogs::compile(platform->device.occaDevice(), buildKernel, platform->device.mode(), communicator, buildOnly);
   }
-
-  platform->kernels.compile();
 
   // load platform related kernels
   std::string kernelName;

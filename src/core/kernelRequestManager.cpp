@@ -111,8 +111,8 @@ kernelRequestManager_t::compile()
           const std::string suffix = kernelRequest.suffix;
           const occa::properties props = kernelRequest.props;
 
-          // MPI staging already handled
-          auto kernel = device.buildKernel(fileName, props, suffix, false);
+          const bool buildRank0 = false;
+          auto kernel = device.buildKernel(fileName, props, suffix, buildRank0);
           requestToKernel[requestName] = kernel;
         }
       }
@@ -129,8 +129,8 @@ kernelRequestManager_t::compile()
         const std::string suffix = kernelRequest.suffix;
         const occa::properties props = kernelRequest.props;
 
-        // MPI staging already handled
-        auto kernel = device.buildKernel(fileName, props, suffix, false);
+        const bool buildRank0 = false;
+        auto kernel = device.buildKernel(fileName, props, suffix, buildRank0); // will just load because binary exists already
         requestToKernel[requestName] = kernel;
       }
     }
@@ -142,8 +142,8 @@ kernelRequestManager_t::compile()
   const auto OCCA_CACHE_DIR0 = occa::env::OCCA_CACHE_DIR;
   if(platform->cacheBcast) {
     const auto OCCA_CACHE_DIR_LOCAL = platform->tmpDir / fs::path("occa/");
-    const auto srcPath = fs::path(std::string(getenv("OCCA_CACHE_DIR")));
-    fileBcast(srcPath, OCCA_CACHE_DIR_LOCAL, platform->comm.mpiComm, platform->verbose); 
+    const auto srcPath = fs::path(getenv("OCCA_CACHE_DIR")); 
+    fileBcast(srcPath, OCCA_CACHE_DIR_LOCAL / "..", platform->comm.mpiComm, platform->verbose); 
     occa::env::OCCA_CACHE_DIR = std::string(OCCA_CACHE_DIR_LOCAL);
   }
 
