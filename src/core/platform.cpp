@@ -85,15 +85,6 @@ platform_t::platform_t(setupAide &_options, MPI_Comm _commg, MPI_Comm _comm)
 
   flopCounter = std::make_unique<flopCounter_t>();
 
-  {
-    int N;
-    options.getArgs("POLYNOMIAL DEGREE", N);
-    const int Nq = N + 1;
-    nrsCheck(BLOCKSIZE < Nq * Nq, comm.mpiComm, EXIT_FAILURE,
-             "Some kernels require BLOCKSIZE >= Nq * Nq\nBLOCKSIZE = %d, Nq*Nq = %d\n",
-             BLOCKSIZE, Nq * Nq);
-  }
-
   // create tmp dir
   {
     int rankLocal;
