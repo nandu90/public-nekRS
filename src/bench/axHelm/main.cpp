@@ -132,8 +132,6 @@ int main(int argc, char** argv)
     constCoeff = true;
   }
 
-  options.setArgs("POLYNOMIAL DEGREE", std::to_string(N));
-
   platform = platform_t::getInstance(options, MPI_COMM_WORLD, MPI_COMM_WORLD);
   platform->options.setArgs("BUILD ONLY", "FALSE");
   const int verbosity = 2;
