@@ -188,10 +188,10 @@ occa::kernel benchmarkAdvsub(int Nfields,
     kernelVariants.push_back(8);
   }
 
-  if (kernelVariants.size() == 1 && !requiresBenchmark) {
+  if (kernelVariants.size() == 1 || !requiresBenchmark) {
     auto newProps = props;
     if (!platform->serial && dealias)
-      newProps["defines/p_knl"] = kernelVariants.back();
+      newProps["defines/p_knl"] = kernelVariants.front();
     return platform->device.buildKernel(fileName, newProps, true);
   }
 

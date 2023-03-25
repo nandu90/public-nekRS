@@ -201,10 +201,10 @@ occa::kernel benchmarkAx(int Nelements,
     const std::string oklpath(getenv("NEKRS_KERNEL_DIR"));
 
     // only a single choice, no need to run benchmark
-    if (kernelVariants.size() == 1 && !requiresBenchmark) {
+    if (kernelVariants.size() == 1 || !requiresBenchmark) {
 
       auto newProps = props;
-      newProps["defines/p_knl"] = kernelVariants.back();
+      newProps["defines/p_knl"] = kernelVariants.front();
 
       const std::string ext = platform->serial ? ".c" : ".okl";
       const std::string fileName = oklpath + "/elliptic/" + kernelName + ext;
