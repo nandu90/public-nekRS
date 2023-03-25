@@ -121,7 +121,7 @@ if(ENABLE_OPENMP)
     set(OCCA_OPENMP_ENABLED 0)
   endif(OPENMP_CXX_FOUND)
 
-  set(OCCA_OPENMP_ENABLED PARENT_SCOPE)
+  set(OCCA_OPENMP_ENABLED ${OCCA_OPENMP_ENABLED} PARENT_SCOPE)
 endif(ENABLE_OPENMP)
 #=======================================
 
@@ -142,7 +142,7 @@ if(ENABLE_CUDA)
     set(OCCA_CUDA_ENABLED 0)
   endif(CUDAToolkit_FOUND)
 
-  set(OCCA_CUDA_ENABLED PARENT_SCOPE)
+  set(OCCA_CUDA_ENABLED ${OCCA_CUDA_ENABLED} PARENT_SCOPE)
 endif(ENABLE_CUDA)
 #=======================================
 
@@ -163,7 +163,7 @@ if(ENABLE_OPENCL)
     set(OCCA_OPENCL_ENABLED 0)
   endif(OpenCL_FOUND)
 
-  set(OCCA_OPENCL_ENABLED PARENT_SCOPE)
+  set(OCCA_OPENCL_ENABLED ${OCCA_OPENCL_ENABLED} PARENT_SCOPE)
 endif(ENABLE_OPENCL)
 #=======================================
 
@@ -185,7 +185,7 @@ if(ENABLE_DPCPP)
     set(OCCA_DPCPP_ENABLED 0)
   endif()
 
-  set(OCCA_DPCPP_ENABLED PARENT_SCOPE)
+  set(OCCA_DPCPP_ENABLED ${OCCA_DPCPP_ENABLED} PARENT_SCOPE)
 endif(ENABLE_DPCPP)
 #=======================================
 
@@ -208,7 +208,7 @@ if(ENABLE_HIP)
     set(OCCA_HIP_ENABLED 0)
   endif(HIP_FOUND)
 
-  set(OCCA_HIP_ENABLED PARENT_SCOPE)
+  set(OCCA_HIP_ENABLED ${OCCA_HIP_ENABLED} PARENT_SCOPE)
 endif(ENABLE_HIP)
 #=======================================
 
@@ -230,7 +230,7 @@ if(ENABLE_METAL AND APPLE)
     set(OCCA_METAL_ENABLED 0)
   endif()
 
-  set(OCCA_METAL_ENABLED PARENT_SCOPE)
+  set(OCCA_METAL_ENABLED ${OCCA_METAL_ENABLED} PARENT_SCOPE)
 endif()
 #=======================================
 
