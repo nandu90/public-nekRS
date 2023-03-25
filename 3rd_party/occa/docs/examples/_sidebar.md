@@ -1,4 +1,0 @@
-- [Examples](./README.md)
-  - [C++](cpp/README.md)
-  - [C](c/README.md)
-  - [Python](py/README.md)
