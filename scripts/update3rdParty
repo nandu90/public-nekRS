@@ -39,8 +39,8 @@ elif [ "$1" == "occa" ]; then
 
 git rm -rf 3rd_party/occa
 git commit -m 'remove occa'
-git subtree add --prefix 3rd_party/occa https://github.com/libocca/occa.git main --squash
-git reset HEAD~1 --soft
+git subtree add --prefix 3rd_party/occa https://github.com/libocca/occa.git development --squash
+git reset HEAD~2 --soft
 git add -u
 git commit -m 'import latest occa'
 
