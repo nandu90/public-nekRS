@@ -9,13 +9,11 @@ static occa::memory o_nekFU;
 static occa::memory o_nekMue;
 static dfloat P_ROT;
 
-@oklBegin
-{
+#ifdef __okl__
 
 #include "channel.oudf"
 
-}
-@oklEnd
+#endif
 
 void userf(nrs_t *nrs, dfloat time, occa::memory o_U, occa::memory o_FU)
 {

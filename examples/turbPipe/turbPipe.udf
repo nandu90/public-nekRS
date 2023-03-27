@@ -10,13 +10,11 @@ static int NSLABS;
 static int NELSLAB;
 
 
-@oklBegin
-{
+#ifdef __okl__
 
 #include "turbPipe.oudf"
 
-}
-@oklEnd
+#endif
 
 void UDF_Setup(nrs_t *nrs)
 {

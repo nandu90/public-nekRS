@@ -10,13 +10,13 @@ static dfloat P_V0;
 static dfloat P_OMEGA;
 
 
-@oklBegin
+#ifdef __okl__
 {
 
 #include "inside.oudf"
 
 }
-@oklEnd
+#endif
 
 void UDF_LoadKernels(occa::properties &kernelInfo)
 {

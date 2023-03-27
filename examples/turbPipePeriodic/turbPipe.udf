@@ -8,13 +8,11 @@ static dfloat zLength;
 
 #include "ci.inc"
 
-@oklBegin
-{
+#ifdef __okl__
 
 #include "turbPipe.oudf"
 
-}
-@oklEnd
+#endif
 
 void userf(nrs_t *nrs, dfloat time, occa::memory o_U, occa::memory o_FU)
 {

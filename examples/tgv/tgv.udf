@@ -1,7 +1,6 @@
 #include "udf.hpp"
 
-@oklBegin
-{
+#ifdef __okl__
 
 @kernel void magSqr(const dlong Ntotal,
                     const dlong offset,
@@ -15,8 +14,7 @@
   }
 }
 
-}
-@oklEnd
+#endif
 
 void printDiagnostics(nrs_t *nrs, dfloat time, int tstep)
 {

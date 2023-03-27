@@ -3,13 +3,11 @@
 //
 #include "udf.hpp"
 
-@oklBegin
-{
+#ifdef __okl__
 
 #include "pb.oudf"
 
-}
-@oklEnd
+#endif
 
 void UDF_Setup(nrs_t *nrs)
 {

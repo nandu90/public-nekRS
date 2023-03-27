@@ -34,6 +34,7 @@ occa::properties compileUDFKernels()
   
   const std::string bcDataFile = installDir + "/include/bdry/bcData.h";
   kernelInfoBC["includes"] += bcDataFile.c_str();
+
   std::string oklFileCache;
   platform->options.getArgs("OKL FILE CACHE", oklFileCache);
   kernelInfoBC["includes"] += realpath(oklFileCache.c_str(), NULL);

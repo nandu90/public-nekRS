@@ -72,7 +72,7 @@ void *udfLoadFunction(const char *fname, int errchk);
 occa::kernel oudfBuildKernel(occa::properties kernelInfo, const char *function);
 
 #ifdef UDF_EXPORTS
-__replace__udf_auto__include__
+#include "udfAutoLoadKernel.hpp"
 #endif
 
 #endif

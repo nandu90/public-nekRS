@@ -41,6 +41,10 @@ set(INCLUDE_DIRS
   ${NEKRS_INSTALL_DIR}/occa/include
 )
 
+# dummy
+add_library(OKL EXCLUDE_FROM_ALL okl.cpp)
+target_include_directories(OKL PRIVATE $ENV{NEKRS_UDF_INCLUDES} ${INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
+
 add_library(UDF SHARED udf.cpp)
 target_include_directories(UDF PRIVATE $ENV{NEKRS_UDF_INCLUDES} ${INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -49,4 +53,4 @@ if(APPLE)
 endif()
 target_link_libraries(UDF "$ENV{NEKRS_UDF_LDFLAGS}")
 
-set_target_properties(UDF PROPERTIES LINKER_LANGUAGE CXX)
+

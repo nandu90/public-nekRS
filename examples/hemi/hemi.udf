@@ -20,13 +20,11 @@ static dfloat zMax;
 
 static lpm_t* particles = nullptr;
 
-@oklBegin
-{
+#ifdef __okl__
 
 #include "hemi.oudf"
 
-}
-@oklEnd
+#endif
 
 void UDF_Setup0(MPI_Comm comm, setupAide &options)
 {

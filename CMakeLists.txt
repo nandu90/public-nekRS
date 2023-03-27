@@ -232,6 +232,7 @@ set(SRC
     src/io/writeFld.cpp
     src/io/fileUtils.cpp
     src/utils/inipp.cpp
+    src/utils/unifdef.c
     src/utils/mysort.cpp
     src/utils/parallelSort.cpp
     src/utils/tinyexpr.c

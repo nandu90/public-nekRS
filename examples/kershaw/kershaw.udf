@@ -3,11 +3,9 @@
 
 static dfloat P_EPS;
 
-@oklBegin
-{
+#ifdef __okl__
 
-}
-@oklEnd
+#endif
 
 void UDF_LoadKernels(occa::properties& kernelInfo)
 {

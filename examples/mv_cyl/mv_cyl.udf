@@ -16,13 +16,11 @@ static dfloat P_OMEGA;
 static dfloat P_AMP;
 static dfloat P_ROT;
 
-@oklBegin
-{
+#ifdef __okl__
 
 #include "mv_cyl.oudf"
 
-}
-@oklEnd
+#endif
  
 void userq(nrs_t* nrs, dfloat time, occa::memory o_S, occa::memory o_SU)
 {

@@ -3,13 +3,11 @@
 //
 #include "udf.hpp"
 
-@oklBegin
-{
+#ifdef __okl__
 
 #include "rbc.oudf"
 
-}
-@oklEnd
+#endif
 
 void userf(nrs_t *nrs, dfloat time, occa::memory o_U, occa::memory o_FU)
 {

@@ -9,11 +9,9 @@ static dfloat zLength;
 static dfloat xLength;
 static dfloat betaY;
 
-@oklBegin
-{
+#ifdef __okl__
 
-} 
-@oklEnd
+#endif
 
 /* User Functions */
 

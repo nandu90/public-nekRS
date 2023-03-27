@@ -43,13 +43,11 @@ static dfloat ZWALL;
 static dfloat maxDt0 = -1;
 
 
-@oklBegin
-{
+#ifdef __okl__
 
 #include "gabls.oudf"
 
-}
-@oklEnd
+#endif
 
 void avgBoundaryValue(nrs_t *nrs, int BID, int nflds, occa::memory o_flds, dfloat *avgs)
 {
