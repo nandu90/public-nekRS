@@ -85,6 +85,7 @@ void adjustOudf(const std::string &filePath)
 
   found = std::regex_search(buffer.str(), std::regex(R"(\s*void\s+scalarDirichletConditions)"));
   scalarDirichletConditions = found;
+
   if (!found)
     df << "void scalarDirichletConditions(bcData *bc){}\n";
 
@@ -334,10 +335,11 @@ void udfBuild(const char *_udfFile, setupAide &options)
 
       } // buildRequired
 
-      adjustOudf(cache_dir + "/udf/okl.cpp"); // called every time to check if required device BC functions exist
-
       if(fs::exists(cache_dir + "/udf/okl.cpp")) 
         fs::rename(cache_dir + "/udf/okl.cpp", oudfFileCache);
+
+      adjustOudf(oudfFileCache); // called every time to check if required device BC functions exist
+
       fileSync(oudfFileCache.c_str());
 
     } // rank 0
