@@ -263,7 +263,7 @@ void udfBuild(const char *_udfFile, setupAide &options)
           fileSync(includeFile.c_str());
         }
 
-        strip_okl(udfFile.c_str(), std::string(cache_dir + "/udf/okl.cpp").c_str());
+        extract_ifdef("__okl__", udfFile.c_str(), std::string(cache_dir + "/udf/okl.cpp").c_str());
         bool oklSectionFound = fs::file_size(cache_dir + "/udf/okl.cpp");
 
         if(!oklSectionFound && oudfFileExists) {

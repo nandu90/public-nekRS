@@ -28,7 +28,7 @@
 
 extern "C" {
 
-void strip_okl(const char *ifilename, const char *ofilename);
+void extract_ifdef(const char *symbol, const char *ifilename, const char *ofilename);
 
 } 
 

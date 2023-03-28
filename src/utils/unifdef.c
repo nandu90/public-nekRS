@@ -301,11 +301,11 @@ strip_lines(const char *src)
 }
 
 void
-strip_okl(const char *ifilename, const char *ofilename)
+extract_ifdef(const char *sym_name, const char *ifilename, const char *ofilename)
 {
         text = true;
         complement = true;
-        addsym1(false, false, "__okl__");
+        addsym1(false, false, (char*) sym_name);
 
 	indirectsym();
 	processinout(ifilename, ofilename);
