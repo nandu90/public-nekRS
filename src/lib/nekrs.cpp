@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <filesystem>
+#include <functional>
 #include "nrs.hpp"
 #include "meshSetup.hpp"
 #include "setup.hpp"
@@ -187,11 +188,6 @@ void setup(MPI_Comm commg_in, MPI_Comm comm_in,
   }
 #endif
 
-}
-
-void runStep(double time, double dt, int tstep)
-{
-  timeStepper::step(nrs, time, dt, tstep);
 }
 
 void copyFromNek(double time, int tstep)
@@ -468,6 +464,43 @@ void resetTimer(const std::string &key) { platform->timer.reset(key); }
 
 int exitValue() { return platform->exitValue; }
 
+void initStep(double time, double dt, int tstep)
+{
+  timeStepper::initStep(nrs, time, dt, tstep);
+}
+
+bool runStep(std::function<bool(int)> convergenceCheck, int corrector)
+{
+  return timeStepper::runStep(nrs, convergenceCheck, corrector);
+}
+
+bool runStep(int corrector)
+{
+
+  auto _nrs = &nrs;
+  auto _udf = &udf;
+
+  std::function<bool(int)> convergenceCheck = [](int corrector) -> bool 
+  {
+    if(udf.timeStepConverged)
+      return udf.timeStepConverged(nrs, corrector);
+    else
+      return true;
+  };
+
+  return timeStepper::runStep(nrs, convergenceCheck, corrector);
+}
+
+double finishStep()
+{
+  timeStepper::finishStep(nrs);
+  return nrs->timePrevious + nrs->dt[0];
+}
+
+bool stepConverged()
+{
+  return nrs->timeStepConverged;  
+}
 
 } // namespace
 

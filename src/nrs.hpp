@@ -51,12 +51,16 @@ struct nrs_t {
   dfloat g0, ig0;
   dfloat CFL, unitTimeCFL;
 
+  dfloat timePrevious;
+
   dfloat p0th[3] = {0.0, 0.0, 0.0};
   dfloat p0the = 0.0;
   dfloat dp0thdt;
 
   int nEXT;
   int nBDF;
+
+  int tstep;
   int lastStep;
   int isOutputStep;
   int outputForceStep;

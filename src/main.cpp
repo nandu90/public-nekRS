@@ -528,8 +528,15 @@ int main(int argc, char** argv)
 
     if (tStep <= 1000) nekrs::verboseInfo(true); 
 
-    nekrs::runStep(time, dt, tStep);
-    time += dt;
+    nekrs::initStep(time, dt, tStep);
+    
+    int corrector = 1;
+    bool converged = false;
+    do {
+      converged = nekrs::runStep(corrector++);
+    } while (!converged);
+ 
+    time = nekrs::finishStep();
 
     if(nekrs::updateFileCheckFreq()) {
       if(tStep % nekrs::updateFileCheckFreq()) 
