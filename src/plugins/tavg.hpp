@@ -1,3 +1,6 @@
+#if !defined(nekrs_tavg_hpp_)
+#define nekrs_tavg_hpp_
+
 /*
      Compute expected value E(X) 
      Statistics can be obtained by:
@@ -9,10 +12,7 @@
      Note: E-operator is linear, in the sense that the expected
            value is given by E(X) = 1/N * sum[ E(X)_i ], where E(X)_i
            is the expected value of the sub-ensemble i (i=1...M).
- */
-
-#if !defined(nekrs_tavg_hpp_)
-#define nekrs_tavg_hpp_
+*/
 
 #include "nrs.hpp"
 #include "nekInterfaceAdapter.hpp"
