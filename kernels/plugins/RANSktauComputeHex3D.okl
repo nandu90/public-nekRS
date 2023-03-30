@@ -147,7 +147,7 @@
 
           if(tau < p_tiny){
             tauSrc = -Y_w - S_tau;
-            dfloat tauDiag = G_wp - S_w0 + S_taup;
+            tauDiag = G_wp - S_w0 + S_taup;
           }
           else{
             tauSrc = -Y_w;
