@@ -7,7 +7,7 @@ static dfloat XLEN;
 static dfloat YLEN;
 static dfloat ZLEN;
 
-static dfloat alpha0;
+static dfloat alphaRef;
 
 static dfloat P_GAMMA;
 static dfloat P_DELTA;
@@ -115,9 +115,11 @@ void UDF_Setup(nrs_t *nrs)
   o_beta = platform->device.malloc(nrs->fieldOffset * sizeof(dfloat));
   o_kappa = platform->device.malloc(nrs->fieldOffset * sizeof(dfloat));
 
-  alpha0 = (P_GAMMA - 1.0) / P_GAMMA;
+  // alphaRef := p0thRef/(rhoRef * cpRef * TRef)
+  // translates to (gammaRef - 1)/gammaRef in case of an ideal gas
+  alphaRef = (P_GAMMA - 1.0) / P_GAMMA;
 
-  lowMach::setup(nrs, alpha0, o_beta, o_kappa);
+  lowMach::setup(nrs, alphaRef, o_beta, o_kappa);
   udf.div = &qtl;
 }
 void UDF_ExecuteStep(nrs_t *nrs, dfloat time, int tstep)

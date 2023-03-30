@@ -25,6 +25,7 @@
 ## Breaking Changes
 * [udf] Plugin header files need to be included explicitly
 * [udf] Rename `bc->wrk` => `bc->usrwrk`
+* [udf] Update to new API of lowMach plugin (see lowMach example)
 * Time step was added to `nekRS::outfld(..., int step, ...)`
 * [par] Use `pMGSchedule` instead of `pMultigridCoarsening` (see help for more details)
 * [par] Rename writeControl value `runTime` => `simulationTime`
@@ -37,7 +38,6 @@
 
 ## Known Bugs / Restrictions
 
-* Best performance requires a polynomialOrder 5-9
 * Not fully optimized for Intel GPUs and CPUs yet
 * [485](https://github.com/Nek5000/Nek5000/issues/485)
 * [729](https://github.com/Nek5000/Nek5000/issues/759)
@@ -46,7 +46,6 @@
 ## Thanks to our Contributors
 
 @neil-lindquist, @kris-rowe, @pwang234, @nandu90, @yhaomin2007
-
 
 We are grateful to all who added new features, filed issues or helped resolve them, 
 asked and answered questions, and were part of inspiring discussions.
