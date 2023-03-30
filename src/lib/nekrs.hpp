@@ -32,6 +32,7 @@ double dt(int tStep);
 double startTime(void);
 double endTime(void);
 int numSteps(void);
+void lastStep(int val);
 int lastStep(double time, int tstep, double elapsedTime);
 int writeControlRunTime(void);
 int exitValue(void);

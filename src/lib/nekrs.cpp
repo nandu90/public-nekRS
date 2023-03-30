@@ -320,6 +320,11 @@ int numSteps(void)
   return numSteps;
 }
 
+void lastStep(int val)
+{
+  nrs->lastStep = val;
+}
+
 int lastStep(double time, int tstep, double elapsedTime)
 {
   if(!platform->options.getArgs("STOP AT ELAPSED TIME").empty()) {
@@ -330,7 +335,7 @@ int lastStep(double time, int tstep, double elapsedTime)
      const double eps = 1e-12;
      nrs->lastStep = fabs((time+nrs->dt[0]) - endTime()) < eps || (time+nrs->dt[0]) > endTime();
   } else {
-    nrs->lastStep = tstep == numSteps();
+    nrs->lastStep = (tstep == numSteps());
   }
  
   if(enforceLastStep) return 1;

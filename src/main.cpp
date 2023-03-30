@@ -484,9 +484,11 @@ int main(int argc, char** argv)
       std::cout << "initialization took " << elapsedTime << " s" << std::endl;
   }
 
-  int lastStep = nekrs::lastStep(time, tStep, elapsedTime);
-  if (nekrs::endTime() > nekrs::startTime())
-    lastStep = 0;
+  int isLastStep = 1;
+  if (nekrs::endTime() > nekrs::startTime() || nekrs::numSteps() > tStep) {
+    isLastStep = 0;
+  }
+  nekrs::lastStep(isLastStep);
 
   nekrs::udfExecuteStep(time, tStep, /* outputStep */ 0);
   nekrs::resetTimer("udfExecuteStep");
@@ -497,7 +499,7 @@ int main(int argc, char** argv)
   double tSolveStepMax = std::numeric_limits<double>::min();
 
   if (rank == 0) {
-    if (lastStep)
+    if (isLastStep)
       std::cout << "endTime or numSteps reached already -> skip timestepping\n"; 
     else if (nekrs::endTime() > nekrs::startTime())
       std::cout << "\ntimestepping to time " << nekrs::endTime() << " ...\n";
@@ -507,22 +509,22 @@ int main(int argc, char** argv)
 
   fflush(stdout);
   MPI_Pcontrol(1);
-  while (!lastStep) {
+  while (!isLastStep) {
     MPI_Barrier(comm);
     const double timeStartStep = MPI_Wtime();
 
     ++tStep;
-    lastStep = nekrs::lastStep(time, tStep, elapsedTime);
+    isLastStep = nekrs::lastStep(time, tStep, elapsedTime);
 
     double dt;
-    if (lastStep && nekrs::endTime() > 0)
+    if (isLastStep && nekrs::endTime() > 0)
       dt = nekrs::endTime() - time;
     else
       dt = nekrs::dt(tStep);
 
     int outputStep = nekrs::outputStep(time + dt, tStep);
     if (nekrs::writeInterval() == 0) outputStep = 0;
-    if (lastStep) outputStep = 1;
+    if (isLastStep) outputStep = 1;
     if (nekrs::writeInterval() < 0) outputStep = 0;
     nekrs::outputStep(outputStep);
 
@@ -569,7 +571,7 @@ int main(int argc, char** argv)
     }
 
     if(nekrs::runTimeStatFreq()) {
-      if (tStep % nekrs::runTimeStatFreq() == 0 || lastStep)
+      if (tStep % nekrs::runTimeStatFreq() == 0 || isLastStep)
         nekrs::printRuntimeStatistics(tStep);
     }
 
