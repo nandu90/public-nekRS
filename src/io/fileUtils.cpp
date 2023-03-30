@@ -127,7 +127,7 @@ void fileBcast(const fs::path &srcPathIn,
   printf("maxFileSize: %d\n", maxFileSize);
 
   auto fileBuf = (char *) std::malloc(maxFileSize * sizeof(char)); 
-  nrsCheck(fileBuf == nullptr MPI_COMM_SELF, 
+  nrsCheck(fileBuf == nullptr, MPI_COMM_SELF, 
            EXIT_FAILURE, "%s\n", "allocating file buffer failed!");
 
   // sweep through list and transfer to nodes 
