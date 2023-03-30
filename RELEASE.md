@@ -45,7 +45,8 @@
 
 ## Thanks to our Contributors
 
-@neil-lindquist, @kris-rowe, @pwang234, @nandu90
+@neil-lindquist, @kris-rowe, @pwang234, @nandu90, @yhaomin2007
+
 
 We are grateful to all who added new features, filed issues or helped resolve them, 
 asked and answered questions, and were part of inspiring discussions.
