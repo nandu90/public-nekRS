@@ -11,11 +11,9 @@ static dfloat P_OMEGA;
 
 
 #ifdef __okl__
-{
 
 #include "outside.oudf"
 
-}
 #endif
 
 void UDF_LoadKernels(occa::properties &kernelInfo)
