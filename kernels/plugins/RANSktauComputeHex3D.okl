@@ -151,7 +151,7 @@
           }
           else{
             tauSrc = -Y_w;
-            tauDiag = G_wp - S_w0 + S_taup + S_tau/tau;
+            tauDiag = G_wp - S_w0 + S_taup + S_tau * itau;
           }
           SRC[id + 0 * offset] = kSrc;
           SRC[id + 1 * offset] = tauSrc;
