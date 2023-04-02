@@ -9,11 +9,9 @@ static dfloat zLength;
 static dfloat xLength;
 static dfloat betaY;
 
-@oklBegin
-{
+#ifdef __okl__
 
-} 
-@oklEnd
+#endif
 
 /* User Functions */
 
@@ -61,10 +59,6 @@ void useric(nrs_t *nrs)
 }
 
 /* UDF Functions */                                                      
-
-void UDF_LoadKernels(occa::properties& kernelInfo)
-{
-}
 
 void UDF_Setup0(MPI_Comm comm, setupAide &options)
 {

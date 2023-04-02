@@ -993,8 +993,11 @@ void parseLinearSolver(const int rank, setupAide &options, inipp::Ini *par, std:
       p_solver = "PCG+FLEXIBLE";
     else
       p_solver = "PCG";
+
     if (p_solver.find("block") != std::string::npos)
       options.setArgs(parSectionName + "BLOCK SOLVER", "TRUE");
+    else
+      options.setArgs(parSectionName + "BLOCK SOLVER", "FALSE");
   }
   else if (p_solver.find("user") != std::string::npos) {
     p_solver = "USER";
@@ -1108,7 +1111,8 @@ void parseRegularization(const int rank, setupAide &options, inipp::Ini *par, st
         {"cutoffratio"},
         {"scalingcoeff"},
         {"vismaxcoeff"},
-        {"rampconstant"},
+        {"activationwidth"},
+        {"threshold"},
     };
     const std::vector<std::string> list = serializeString(regularization, '+');
     for (const std::string s : list) {
@@ -1131,45 +1135,37 @@ void parseRegularization(const int rank, setupAide &options, inipp::Ini *par, st
       append_error("avm regularization is only enabled for scalars!\n");
     }
 
-    options.setArgs(parPrefix + "HPFRT MODES", "1");
     if (usesAVM) {
       if (regularization.find("hpfresidual") != std::string::npos)
-        options.setArgs(parPrefix + "REGULARIZATION METHOD", "HPF_RESIDUAL");
+        options.setArgs(parPrefix + "REGULARIZATION METHOD", "AVM_RESIDUAL");
       else if (regularization.find("highestmodaldecay") != std::string::npos)
-        options.setArgs(parPrefix + "REGULARIZATION METHOD", "HIGHEST_MODAL_DECAY");
+        options.setArgs(parPrefix + "REGULARIZATION METHOD", "AVM_HIGHEST_MODAL_DECAY");
       else {
         append_error("avm must be specified with hpfResidual or HighestModalDecay!\n");
       }
 
       options.setArgs(parPrefix + "REGULARIZATION VISMAX COEFF", "0.5");
       options.setArgs(parPrefix + "REGULARIZATION SCALING COEFF", "1.0");
-      options.setArgs(parPrefix + "REGULARIZATION RAMP CONSTANT", to_string_f(1.0));
+      options.setArgs(parPrefix + "REGULARIZATION MDH ACTIVATION WIDTH", to_string_f(1.0));
+      options.setArgs(parPrefix + "REGULARIZATION MDH THRESHOLD", to_string_f(-4.0));
       options.setArgs(parPrefix + "REGULARIZATION AVM C0", "FALSE");
+      options.setArgs(parPrefix + "REGULARIZATION HPF MODES", "1");
     }
     if (usesHPFRT) {
-      options.setArgs(parPrefix + "REGULARIZATION METHOD", "RELAXATION");
-    }
-
-    // common parameters
-    for (std::string s : list) {
-
-      const auto nmodeStr = parseValueForKey(s, "nmodes");
-      if (!nmodeStr.empty()) {
-        double value = std::stod(nmodeStr);
-        value = round(value);
-        options.setArgs(parPrefix + "HPFRT MODES", to_string_f(value));
-      }
-
-      const auto cutoffRatioStr = parseValueForKey(s, "cutoffratio");
-      if (!cutoffRatioStr.empty()) {
-        double filterCutoffRatio = std::stod(cutoffRatioStr);
-        double NFilterModes = round((N + 1) * (1 - filterCutoffRatio));
-        options.setArgs(parPrefix + "HPFRT MODES", to_string_f(NFilterModes));
-      }
+      options.setArgs(parPrefix + "HPFRT MODES", "1");
+      options.setArgs(parPrefix + "REGULARIZATION METHOD", "HPF_RELAXATION");
     }
 
     if (usesAVM) {
       for (std::string s : list) {
+
+        const auto nmodeStr = parseValueForKey(s, "nmodes");
+        if (!nmodeStr.empty()) {
+          double value = std::stod(nmodeStr);
+          value = round(value);
+          options.setArgs(parPrefix + "REGULARIZATION HPF MODES", to_string_f(value));
+        }
+
         const auto vismaxcoeffStr = parseValueForKey(s, "vismaxcoeff");
         if (!vismaxcoeffStr.empty()) {
           options.setArgs(parPrefix + "REGULARIZATION VISMAX COEFF", vismaxcoeffStr);
@@ -1190,9 +1186,13 @@ void parseRegularization(const int rank, setupAide &options, inipp::Ini *par, st
           options.setArgs(parPrefix + "REGULARIZATION AVM C0", "TRUE");
         }
 
-        const auto rampConstantStr = parseValueForKey(s, "rampconstant");
+        const auto rampConstantStr = parseValueForKey(s, "activationwidth");
         if (!rampConstantStr.empty()) {
-          options.setArgs(parPrefix + "REGULARIZATION RAMP CONSTANT", rampConstantStr);
+          options.setArgs(parPrefix + "REGULARIZATION MDH ACTIVATION WIDTH", rampConstantStr);
+        }
+        const auto thresholdStr = parseValueForKey(s, "threshold");
+        if (!thresholdStr.empty()) {
+          options.setArgs(parPrefix + "REGULARIZATION MDH THRESHOLD", thresholdStr);
         }
       }
     }
@@ -1200,6 +1200,18 @@ void parseRegularization(const int rank, setupAide &options, inipp::Ini *par, st
     if (usesHPFRT) {
       bool setsStrength = false;
       for (std::string s : list) {
+        const auto nmodeStr = parseValueForKey(s, "nmodes");
+        if (!nmodeStr.empty()) {
+          double value = std::stod(nmodeStr);
+          value = round(value);
+          options.setArgs(parPrefix + "HPFRT MODES", to_string_f(value));
+        }
+        const auto cutoffRatioStr = parseValueForKey(s, "cutoffratio");
+        if (!cutoffRatioStr.empty()) {
+          double filterCutoffRatio = std::stod(cutoffRatioStr);
+          double NFilterModes = round((N + 1) * (1 - filterCutoffRatio));
+          options.setArgs(parPrefix + "HPFRT MODES", to_string_f(NFilterModes));
+        }
 
         const auto scalingCoeffStr = parseValueForKey(s, "scalingcoeff");
         if (!scalingCoeffStr.empty()) {
@@ -1223,7 +1235,7 @@ void parseRegularization(const int rank, setupAide &options, inipp::Ini *par, st
     std::string filtering;
     par->extract(parSection, "filtering", filtering);
     if (filtering == "hpfrt") {
-      options.setArgs(parPrefix + "REGULARIZATION METHOD", "RELAXATION");
+      options.setArgs(parPrefix + "REGULARIZATION METHOD", "HPF_RELAXATION");
       if (par->extract(parSection, "filterweight", sbuf)) {
         int err = 0;
         double weight = te_interp(sbuf.c_str(), &err);
@@ -1273,9 +1285,14 @@ void parseRegularization(const int rank, setupAide &options, inipp::Ini *par, st
                         options.getArgs("REGULARIZATION VISMAX COEFF"));
         options.setArgs(parPrefix + "REGULARIZATION SCALING COEFF",
                         options.getArgs("REGULARIZATION SCALING COEFF"));
-        options.setArgs(parPrefix + "REGULARIZATION RAMP CONSTANT",
-                        options.getArgs("REGULARIZATION RAMP CONSTANT"));
-        options.setArgs(parPrefix + "REGULARIZATION AVM C0", options.getArgs("REGULARIZATION AVM C0"));
+        options.setArgs(parPrefix + "REGULARIZATION MDH ACTIVATION WIDTH",
+                        options.getArgs("REGULARIZATION MDH ACTIVATION WIDTH"));
+        options.setArgs(parPrefix + "REGULARIZATION MDH THRESHOLD",
+                        options.getArgs("REGULARIZATION MDH THRESHOLD"));
+        options.setArgs(parPrefix + "REGULARIZATION AVM C0", 
+                        options.getArgs("REGULARIZATION AVM C0"));
+        options.setArgs(parPrefix + "REGULARIZATION HPF MODES", 
+                        options.getArgs("REGULARIZATION HPF MODES"));
       }
     }
   }

@@ -387,7 +387,7 @@ void mkSIZE(int lx1,
   sprintf(line, "%s/core/SIZE.template", nek5000_dir.c_str());
   FILE *fp = fopen(line, "r");
   nrsCheck(!fp, MPI_COMM_SELF, EXIT_FAILURE,
-           "Cannot open %s", line); 
+           "Cannot open %s!\n", line); 
 
   char *sizeFile;
   {

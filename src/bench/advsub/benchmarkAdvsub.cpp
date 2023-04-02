@@ -188,10 +188,10 @@ occa::kernel benchmarkAdvsub(int Nfields,
     kernelVariants.push_back(8);
   }
 
-  if (kernelVariants.size() == 1 && !requiresBenchmark) {
+  if (kernelVariants.size() == 1 || !requiresBenchmark) {
     auto newProps = props;
     if (!platform->serial && dealias)
-      newProps["defines/p_knl"] = kernelVariants.back();
+      newProps["defines/p_knl"] = kernelVariants.front();
     return platform->device.buildKernel(fileName, newProps, true);
   }
 
@@ -296,7 +296,7 @@ occa::kernel benchmarkAdvsub(int Nfields,
     const auto tol = 200. * std::numeric_limits<dfloat>::epsilon();
     if (err > tol) {
       if (platform->comm.mpiRank == 0 && verbosity > 1) {
-        std::cout << "Ignore kernel " << kernelVariant 
+        std::cout << "advSub: Ignore kernel " << kernelVariant 
                   << " because error of " << err
                   << " is too large compared to reference\n";
       }

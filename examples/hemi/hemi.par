@@ -23,5 +23,7 @@ density = 1.0
 viscosity = -1400
 
 [CASEDATA]
-nParticles = 512000 # 80^3
+# inject nParticlesInject particles every injectionFrequency time steps
+nParticlesInject = 1024
+injectionFrequency = 50
 Stk = 5

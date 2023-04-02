@@ -576,7 +576,8 @@ void findpts_t::findptsEvalImpl(occa::memory &o_out,
         out_base[opt->index + outputOffset * field] = opt->out[field];
       }
     }
-    o_out.copyFrom(out_base.data(), nFields * outputOffset * sizeof(dfloat));
+    if (outputOffset)
+      o_out.copyFrom(out_base.data(), nFields * outputOffset * sizeof(dfloat));
 
     // launch local eval kernel on all points that can be evaluated on the current rank
     if (timerLevel != TimerLevel::None) {
@@ -628,17 +629,22 @@ void findpts_t::findptsEvalImpl(dfloat *out,
   static occa::memory o_in;
   static occa::memory o_out;
 
-  const auto Nbytes = inputOffset * nFields * sizeof(dfloat);
-  if (o_in.size() < Nbytes) {
-    if (o_in.size()) {
-      o_in.free();
-      o_out.free();
+  {
+    const auto Nbytes = inputOffset * nFields * sizeof(dfloat);
+    if (o_in.size() < Nbytes) {
+      if (o_in.size()) o_in.free();
+      constexpr int growthFactor = 2;
+      o_in = platform->device.malloc(growthFactor * Nbytes);
     }
+  }
 
-    constexpr int growthFactor = 2;
-
-    o_in = platform->device.malloc(growthFactor * Nbytes);
-    o_out = platform->device.malloc(growthFactor * Nbytes);
+  {
+    const auto Nbytes = outputOffset * nFields * sizeof(dfloat);
+    if (o_out.size() < Nbytes) {
+      if (o_out.size()) o_out.free();
+      constexpr int growthFactor = 2;
+      o_out = platform->device.malloc(growthFactor * Nbytes);
+    }
   }
 
   struct array src, outpt;
@@ -763,7 +769,8 @@ void findpts_t::findptsEvalImpl(dfloat *out,
       platform->timer.toc(timerName + "findptsEvalImpl::localEvalKernel");
     }
 
-    o_out.copyTo(out, nFields * outputOffset * sizeof(dfloat));
+    if (outputOffset)
+      o_out.copyTo(out, nFields * outputOffset * sizeof(dfloat));
 
     for (; n; --n, ++opt) {
       for (int field = 0; field < nFields; ++field) {
@@ -1665,6 +1672,8 @@ crystal *findpts_t::crystalRouter() { return this->cr; }
 void findpts_t::update(data_t &data)
 {
   auto npt = data.code.size();
+  if (npt == 0)
+    return;
   if (o_code.size() < npt * sizeof(dlong)) {
     if (o_code.size()) {
       o_code.free();

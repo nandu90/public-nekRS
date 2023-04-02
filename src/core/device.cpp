@@ -199,7 +199,7 @@ occa::kernel device_t::buildKernel(const std::string &fileName,
 
     if(pass == 0) {
       if(platform->cacheBcast) {
-        const auto srcPath = (fs::path(constructedKernel.sourceFilename()).parent_path());
+        const auto srcPath = (fs::path(constructedKernel.binaryFilename()).parent_path());
         const auto dstPath = OCCA_CACHE_DIR / fs::path("cache/");
         fileBcast(srcPath, dstPath, _comm.mpiComm, platform->verbose);
       } else {
@@ -244,7 +244,7 @@ occa::kernel device_t::buildKernel(const std::string &fullPath,
 
       if(pass == 0) {
         if(platform->cacheBcast) {
-          const auto srcPath = (fs::path(constructedKernel.sourceFilename()).parent_path());
+          const auto srcPath = (fs::path(constructedKernel.binaryFilename()).parent_path());
           const auto dstPath = OCCA_CACHE_DIR / fs::path("cache/");
           fileBcast(srcPath, dstPath, _comm.mpiComm, platform->verbose);
         } else {

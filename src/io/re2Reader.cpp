@@ -13,7 +13,7 @@ void re2::nelg(const std::string& meshFile, int& nelgt, int& nelgv, MPI_Comm com
     strcpy(buf, meshFile.c_str());
     FILE *fp = fopen(buf, "r");
     nrsCheck(!fp, MPI_COMM_SELF, EXIT_FAILURE, "Cannot find %s!\n", buf);
-    fgets(buf, 80, fp);
+    fgets(buf, re2HeaderBytes, fp);
     fclose(fp);
  
     char ver[6];

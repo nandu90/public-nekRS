@@ -32,14 +32,16 @@ public:
   auto *ptr() { return findpts_.get(); }
   auto &data() {return data_;}
 
+  int numPoints() const { return nPoints; }
+
   // calls underlying findpts_t::update
   void update();
 
   // add points on device
-  void addPoints(int n, occa::memory o_x, occa::memory o_y, occa::memory o_z);
+  void setPoints(int n, occa::memory o_x, occa::memory o_y, occa::memory o_z);
 
   // add points on host
-  void addPoints(int n, dfloat *x, dfloat *y, dfloat *z);
+  void setPoints(int n, dfloat *x, dfloat *y, dfloat *z);
 
   // set timer level
   void setTimerLevel(TimerLevel level);
@@ -60,7 +62,7 @@ private:
 
   bool pointsAdded = false;
 
-  // correponds  to which addPoints overload is called
+  // correponds  to which setPoints overload is called
   bool useHostPoints = false;
   bool useDevicePoints = false;
 

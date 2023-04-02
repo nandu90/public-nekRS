@@ -258,15 +258,10 @@ namespace occa {
 
     void device::setArchCompilerFlags(const occa::json &kernelProps,
                                       std::string &compilerFlags) {
-      std::string archString = 
-        std::to_string(archMajorVersion) + std::to_string(archMinorVersion);
-
-      if (compilerFlags.find("-arch=compute_") == std::string::npos) {
-        compilerFlags += " -arch=compute_" + archString;
-      }
-
-      if (compilerFlags.find("-code=sm_") == std::string::npos) {
-        compilerFlags += " -code=sm_" + archString;
+      if (compilerFlags.find("-arch=sm_") == std::string::npos) {
+        compilerFlags += " -arch=sm_";
+        compilerFlags += std::to_string(archMajorVersion);
+        compilerFlags += std::to_string(archMinorVersion);
       }
     }
 

@@ -29,7 +29,7 @@
                       @ restrict const dfloat *D,
                       const dlong offset,
                       @ restrict const dfloat *gradQ,
-                      @ restrict const dfloat *Q,
+                      @ restrict const dfloat *BETA,
                       @ restrict const dfloat *DIFF,
                       @ restrict const dfloat *RHOCP,
                       @ restrict const dfloat *SRC,
@@ -58,18 +58,16 @@
           const dfloat Un = gradQ[id + 0 * offset];
           const dfloat Vn = gradQ[id + 1 * offset];
           const dfloat Wn = gradQ[id + 2 * offset];
-          {
-            const dfloat cond = DIFF[id];
-            s_U[j][i] = cond * Un;
-            s_V[j][i] = cond * Vn;
-            s_W[j][i] = cond * Wn;
-          }
+          const dfloat cond = DIFF[id];
+
+          s_U[j][i] = cond * Un;
+          s_V[j][i] = cond * Vn;
+          s_W[j][i] = cond * Wn;
 
           if (k == 0) {
 #pragma unroll
             for (int l = 0; l < p_Nq; ++l) {
               const dlong iid = e * p_Np + l * p_Nq * p_Nq + j * p_Nq + i;
-              const dfloat cond = DIFF[iid];
               r_U[l] = cond * gradQ[iid + 0 * offset];
               r_V[l] = cond * gradQ[iid + 1 * offset];
               r_W[l] = cond * gradQ[iid + 2 * offset];
@@ -93,7 +91,6 @@
           const dfloat dtdz = vgeo[gid + p_TZID * p_Np];
           const dfloat JW = vgeo[gid + p_JWID * p_Np];
 
-          const dfloat iRhoCpT = 1 / (RHOCP[id] * Q[id]);
           const dfloat qvol = SRC[id];
 
           dfloat dudr = 0, duds = 0, dudt = 0;
@@ -122,7 +119,7 @@
           div += (drdy * dvdr + dsdy * dvds + dtdy * dvdt);
           div += (drdz * dwdr + dsdz * dwds + dtdz * dwdt);
 
-          QTL[id] += JW * iRhoCpT * (div + qvol);
+          QTL[id] += JW * BETA[id] / RHOCP[id] * (div + qvol);
         }
       }
     }

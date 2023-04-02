@@ -26,7 +26,7 @@ kernelRequestManager_t::add(kernelRequest_t request, bool checkUnique)
     int unique = (iterAndBoolPair.second) ? 1 : 0;
     MPI_Allreduce(MPI_IN_PLACE, &unique, 1, MPI_INT, MPI_MIN, platformRef.comm.mpiComm);
     nrsCheck(!unique, platformRef.comm.mpiComm, EXIT_FAILURE, 
-             "Error in kernelRequestManager_t::add\nRequest details: %s\n", request.to_string().c_str());
+             "request details: %s\n", request.to_string().c_str());
   }
 
   const std::string fileName = request.fileName;
@@ -47,7 +47,6 @@ kernelRequestManager_t::get(const std::string& request, bool checkValid) const
     { 
         std::stringstream txt;
         txt << "\n";
-        txt << "Error in kernelRequestManager_t::getKernel():\n";
         txt << "Cannot find requested kernel " << request << "!\n";
         txt << "Available:\n";
         for(auto&& keyAndValue : requestToKernelMap)
@@ -60,7 +59,12 @@ kernelRequestManager_t::get(const std::string& request, bool checkValid) const
     nrsCheck(errorFlag, platformRef.comm.mpiComm, EXIT_FAILURE, errTxt().c_str(), "");
   }
 
-  return requestToKernelMap.at(request);
+
+  occa::kernel knl = requestToKernelMap.at(request); 
+  nrsCheck(!knl.isInitialized(), MPI_COMM_SELF, EXIT_FAILURE, 
+           "requested kernel %s not initialized!\n", request.c_str());
+
+  return knl;
 }
 
 void
@@ -107,8 +111,8 @@ kernelRequestManager_t::compile()
           const std::string suffix = kernelRequest.suffix;
           const occa::properties props = kernelRequest.props;
 
-          // MPI staging already handled
-          auto kernel = device.buildKernel(fileName, props, suffix, false);
+          const bool buildRank0 = false;
+          auto kernel = device.buildKernel(fileName, props, suffix, buildRank0);
           requestToKernel[requestName] = kernel;
         }
       }
@@ -125,8 +129,8 @@ kernelRequestManager_t::compile()
         const std::string suffix = kernelRequest.suffix;
         const occa::properties props = kernelRequest.props;
 
-        // MPI staging already handled
-        auto kernel = device.buildKernel(fileName, props, suffix, false);
+        const bool buildRank0 = false;
+        auto kernel = device.buildKernel(fileName, props, suffix, buildRank0); // will just load because binary exists already
         requestToKernel[requestName] = kernel;
       }
     }
@@ -138,8 +142,8 @@ kernelRequestManager_t::compile()
   const auto OCCA_CACHE_DIR0 = occa::env::OCCA_CACHE_DIR;
   if(platform->cacheBcast) {
     const auto OCCA_CACHE_DIR_LOCAL = platform->tmpDir / fs::path("occa/");
-    const auto srcPath = fs::path(std::string(getenv("OCCA_CACHE_DIR")));
-    fileBcast(srcPath, OCCA_CACHE_DIR_LOCAL, platform->comm.mpiComm, platform->verbose); 
+    const auto srcPath = fs::path(getenv("OCCA_CACHE_DIR")); 
+    fileBcast(srcPath, OCCA_CACHE_DIR_LOCAL / "..", platform->comm.mpiComm, platform->verbose); 
     occa::env::OCCA_CACHE_DIR = std::string(OCCA_CACHE_DIR_LOCAL);
   }
 

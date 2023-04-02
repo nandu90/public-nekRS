@@ -1,15 +1,15 @@
 //
 // nekRS User Defined File
 //
-#include <math.h>
 #include "udf.hpp"
 #include "plugins/tavg.hpp"
 
 
-void UDF_LoadKernels(occa::properties& kernelInfo)
-{
-  tavg::buildKernel(kernelInfo);
-}
+#ifdef __okl__
+
+#include "periodicHill.oudf"
+
+#endif
 
 void UDF_Setup0(MPI_Comm comm, setupAide &options)
 {

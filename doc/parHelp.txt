@@ -146,7 +146,8 @@ regularization
                               +hpfResidual                             use HPF Residual AVM
                                 +nModes=<int>                          number of modes
                               +highestModalDecay                       use Persson's highest modal decay AVM
-                                +rampConstant=<float>                  controls ramp to maximum artificial viscosity
+                                +threshold=<float>
+                                +activationWidth=<float>
 ----------------------------------------------------------------------------------------------------------------------
 [MESH]
 

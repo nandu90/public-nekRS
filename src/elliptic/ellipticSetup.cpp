@@ -96,7 +96,7 @@ void checkConfig(elliptic_t *elliptic)
     }
   }
 
-  nrsCheck(err, platform->comm.mpiComm, EXIT_FAILURE, "", "");
+  nrsCheck(err, platform->comm.mpiComm, EXIT_FAILURE, "%s", "\n");
 }
 
 void ellipticSolveSetup(elliptic_t *elliptic)

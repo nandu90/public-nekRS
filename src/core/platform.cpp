@@ -69,6 +69,9 @@ platform_t::platform_t(setupAide &_options, MPI_Comm _commg, MPI_Comm _comm)
   if(getenv("NEKRS_CACHE_BCAST"))
     cacheBcast = std::stoi(getenv("NEKRS_CACHE_BCAST"));
 
+  if (options.compareArgs("BUILD ONLY", "TRUE"))
+    cacheBcast = 0;
+
   nrsCheck(cacheLocal && cacheBcast,
            _comm, EXIT_FAILURE, 
            "NEKRS_CACHE_LOCAL=1 and NEKRS_CACHE_BCAST=1 is incompatible!", "");
@@ -84,15 +87,6 @@ platform_t::platform_t(setupAide &_options, MPI_Comm _commg, MPI_Comm _comm)
     timer.disableSync();
 
   flopCounter = std::make_unique<flopCounter_t>();
-
-  {
-    int N;
-    options.getArgs("POLYNOMIAL DEGREE", N);
-    const int Nq = N + 1;
-    nrsCheck(BLOCKSIZE < Nq * Nq, comm.mpiComm, EXIT_FAILURE,
-             "Some kernels require BLOCKSIZE >= Nq * Nq\nBLOCKSIZE = %d, Nq*Nq = %d\n",
-             BLOCKSIZE, Nq * Nq);
-  }
 
   // create tmp dir
   {

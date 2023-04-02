@@ -977,10 +977,11 @@ void pMGLevel::build(elliptic_t *pSolver)
           auto maskedGlobalIds = (hlong*) calloc(mesh->Nlocal,sizeof(hlong));
           memcpy(maskedGlobalIds, mesh->globalIds, mesh->Nlocal * sizeof(hlong));
           auto maskIds = (dlong*) std::malloc(elliptic->o_maskIds.size());
-          elliptic->o_maskIds.copyTo(maskIds); 
-          for (dlong n = 0; n < elliptic->Nmasked; n++) maskedGlobalIds[maskIds[n]] = 0;
- 
-          elliptic->o_maskIdsGlobal.copyTo(maskedGlobalIds);
+          if(elliptic->Nmasked) {
+            elliptic->o_maskIds.copyTo(maskIds); 
+            for (dlong n = 0; n < elliptic->Nmasked; n++) maskedGlobalIds[maskIds[n]] = 0;
+          }
+
           ogsOverlap = (void *)oogs::setup(Nelements * Np,
                                            maskedGlobalIds,
                                            1,
@@ -1014,7 +1015,7 @@ void pMGLevel::build(elliptic_t *pSolver)
         o_Su.free();
 
         if(platform->comm.mpiRank == 0) {
-          printf("testing fdm overlap %.2es %.2es ", nonOverlappedTime, overlappedTime);
+          printf("autotuning overlap in smoothSchwarz: %.2es %.2es ", nonOverlappedTime, overlappedTime);
           if(ogsExtOverlap)
             printf("(overlap enabled)");
 

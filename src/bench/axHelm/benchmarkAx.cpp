@@ -201,10 +201,10 @@ occa::kernel benchmarkAx(int Nelements,
     const std::string oklpath(getenv("NEKRS_KERNEL_DIR"));
 
     // only a single choice, no need to run benchmark
-    if (kernelVariants.size() == 1 && !requiresBenchmark) {
+    if (kernelVariants.size() == 1 || !requiresBenchmark) {
 
       auto newProps = props;
-      newProps["defines/p_knl"] = kernelVariants.back();
+      newProps["defines/p_knl"] = kernelVariants.front();
 
       const std::string ext = platform->serial ? ".c" : ".okl";
       const std::string fileName = oklpath + "/elliptic/" + kernelName + ext;
@@ -295,7 +295,7 @@ occa::kernel benchmarkAx(int Nelements,
       const auto tol = 400. * std::numeric_limits<FPType>::epsilon();
       if (err > tol) {
         if (platform->comm.mpiRank == 0 && verbosity > 1) {
-          std::cout << "Ignore kernel " << kernelVariant
+          std::cout << "Ax: Ignore kernel " << kernelVariant
                     << " because error of " << err
                     << " is too large compared to reference\n";
         }

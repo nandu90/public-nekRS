@@ -108,7 +108,7 @@ C   Set initial conditions
       INCLUDE 'TOTAL'
       INCLUDE 'NEKUSE'
 
-      p0th   = 1.0
+      p0th = 1.0
 
       IF (IFIELD.EQ.1) THEN          ! ---------- Velocity
           UX = 0.0

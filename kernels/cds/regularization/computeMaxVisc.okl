@@ -180,7 +180,6 @@ inline dfloat nu_k(const dfloat s, const dfloat logReferenceSensor, const dfloat
             visc_max = (visc_max < errorTerm) ? visc_max : errorTerm;
           }
 
-          // s_maxdFdS = max(s_maxdFdS, visc_max)
           s_maxdFdS[tid] = (s_maxdFdS[tid] > visc_max) ? s_maxdFdS[tid] : visc_max;
         }
       }

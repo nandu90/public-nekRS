@@ -19,7 +19,7 @@
     for (int j = 0; j < p_Nq; ++j; @inner(1)) {
       for (int i = 0; i < p_Nq; ++i; @inner(0)) {
         const int id = i + j * p_Nq;
-        s_FT[j][i] = fMT[id + is * p_Nq * p_Nq];
+        s_FT[j][i] = fMT[id];
 
 #pragma unroll p_Nq
         for (int k = 0; k < p_Nq; ++k)
@@ -119,6 +119,7 @@
       }
     }
     @barrier();
+
 // reduce p_Nq * p_Nq to single value
 #if p_blockSize > 512
     for (int j = 0; j < p_Nq; ++j; @inner(1)) {
@@ -132,6 +133,7 @@
     }
     @barrier();
 #endif
+
 #if p_blockSize > 256
     for (int j = 0; j < p_Nq; ++j; @inner(1)) {
       for (int i = 0; i < p_Nq; ++i; @inner(0)) {
@@ -144,6 +146,7 @@
     }
     @barrier();
 #endif
+
     for (int j = 0; j < p_Nq; ++j; @inner(1)) {
       for (int i = 0; i < p_Nq; ++i; @inner(0)) {
         const int t = j * p_Nq + i;
@@ -154,6 +157,7 @@
       }
     }
     @barrier();
+
     for (int j = 0; j < p_Nq; ++j; @inner(1)) {
       for (int i = 0; i < p_Nq; ++i; @inner(0)) {
         const int t = j * p_Nq + i;
@@ -164,6 +168,7 @@
       }
     }
     @barrier();
+
     for (int j = 0; j < p_Nq; ++j; @inner(1)) {
       for (int i = 0; i < p_Nq; ++i; @inner(0)) {
         const int t = j * p_Nq + i;
@@ -174,6 +179,7 @@
       }
     }
     @barrier();
+
     for (int j = 0; j < p_Nq; ++j; @inner(1)) {
       for (int i = 0; i < p_Nq; ++i; @inner(0)) {
         const int t = j * p_Nq + i;
@@ -184,6 +190,7 @@
       }
     }
     @barrier();
+
     for (int j = 0; j < p_Nq; ++j; @inner(1)) {
       for (int i = 0; i < p_Nq; ++i; @inner(0)) {
         const int t = j * p_Nq + i;
@@ -194,6 +201,7 @@
       }
     }
     @barrier();
+
     for (int j = 0; j < p_Nq; ++j; @inner(1)) {
       for (int i = 0; i < p_Nq; ++i; @inner(0)) {
         const int t = j * p_Nq + i;
@@ -204,6 +212,7 @@
       }
     }
     @barrier();
+
     for (int j = 0; j < p_Nq; ++j; @inner(1)) {
       for (int i = 0; i < p_Nq; ++i; @inner(0)) {
         const int t = j * p_Nq + i;
@@ -214,6 +223,7 @@
       }
     }
     @barrier();
+
     for (int j = 0; j < p_Nq; ++j; @inner(1)) {
       for (int i = 0; i < p_Nq; ++i; @inner(0)) {
         const int t = j * p_Nq + i;
@@ -225,5 +235,6 @@
         }
       }
     }
+
   }
 }

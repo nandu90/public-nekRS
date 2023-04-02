@@ -376,7 +376,7 @@ namespace occa {
           return true;
         }
       );
-
+      
       io::sync(binaryFilename);
 
       modeKernel_t *k = buildKernelFromBinary(binaryFilename,
@@ -386,7 +386,6 @@ namespace occa {
       if (k) {
         k->sourceFilename = filename;
       }
-
       return k;
     }
 

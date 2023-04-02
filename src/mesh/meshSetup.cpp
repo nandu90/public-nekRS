@@ -22,6 +22,10 @@ occa::properties meshKernelProperties(int N)
   constexpr int Nggeo{7};
   constexpr int Nsgeo{13};
 
+  nrsCheck(BLOCKSIZE < Nq * Nq, MPI_COMM_SELF, EXIT_FAILURE,
+           "BLOCKSIZE of %d < %d (Nq * Nq)\n!",
+           BLOCKSIZE, Nq * Nq);
+
   meshProperties["defines/" "p_dim"] = 3;
   meshProperties["defines/" "p_Nverts"] = 8;
   meshProperties["defines/" "p_Nfields"] = 1;

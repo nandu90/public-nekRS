@@ -1,17 +1,18 @@
 //
 // nekRS User Defined File
 //
-#include <math.h>
 #include "udf.hpp"
 #include "plugins/RANSktau.hpp"
 
 #include "ci.inc"
 
-/* User Functions */
-
 static dfloat rho, mueLam;
-static occa::kernel scalarScaledAddKernel;
-static occa::memory o_ywd;
+
+#ifdef __okl__
+
+#include "channel.oudf"
+
+#endif
 
 void userq(nrs_t *nrs, dfloat time, occa::memory o_S, occa::memory o_FS)
 {
@@ -34,13 +35,7 @@ void uservp(nrs_t *nrs, dfloat time, occa::memory o_U, occa::memory o_S,
   const dfloat Pr_t = 0.7;
   occa::memory o_mue_t = RANSktau::o_mue_t();
   occa::memory o_temp_mue = cds->o_diff + 0*cds->fieldOffset[0]*sizeof(dfloat);
-  scalarScaledAddKernel(mesh->Nlocal, conductivity, 1/Pr_t, o_mue_t, o_temp_mue); 
-}
-
-void UDF_LoadKernels(occa::properties& kernelInfo)
-{
-  scalarScaledAddKernel = oudfBuildKernel(kernelInfo, "scalarScaledAdd");
-  RANSktau::buildKernel(kernelInfo);
+  scalarScaledAdd(mesh->Nlocal, conductivity, 1/Pr_t, o_mue_t, o_temp_mue); 
 }
 
 void UDF_Setup0(MPI_Comm comm, setupAide &options)

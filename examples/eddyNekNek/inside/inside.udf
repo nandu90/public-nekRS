@@ -2,7 +2,6 @@
 //
 // nekRS User Defined File
 //
-#include <math.h>
 #include "udf.hpp"
 #include "ci.inc"
 
@@ -10,9 +9,12 @@ static dfloat P_U0;
 static dfloat P_V0;
 static dfloat P_OMEGA;
 
-occa::kernel userMeshVelocityKernel;
 
-/* UDF Functions */
+#ifdef __okl__
+
+#include "inside.oudf"
+
+#endif
 
 void UDF_LoadKernels(occa::properties &kernelInfo)
 {
@@ -25,8 +27,6 @@ void UDF_LoadKernels(occa::properties &kernelInfo)
   platform->options.getArgs("VISCOSITY", viscosity);
   kernelInfo["defines/p_visc"] = viscosity;
 
-  userMeshVelocityKernel = oudfBuildKernel(kernelInfo, "userMeshVelocity");
-  exactUVWKernel = oudfBuildKernel(kernelInfo, "exactUVW");
 }
 
 void UDF_Setup0(MPI_Comm comm, setupAide &options)
@@ -68,16 +68,16 @@ void UDF_ExecuteStep(nrs_t *nrs, dfloat time, int tstep)
 
   auto *mesh = nrs->meshV;
   if (platform->options.compareArgs("MOVING MESH", "TRUE")) {
-    userMeshVelocityKernel(mesh->Nlocal, nrs->fieldOffset, mesh->o_x, mesh->o_y, mesh->o_z, mesh->o_U);
+    userMeshVelocity(mesh->Nlocal, nrs->fieldOffset, mesh->o_x, mesh->o_y, mesh->o_z, mesh->o_U);
   }
 
   constexpr int nStepAnalytical = 5;
   if (tstep <= nStepAnalytical) {
-    exactUVWKernel(mesh->Nlocal, nrs->fieldOffset, time, mesh->o_x, mesh->o_y, mesh->o_z, nrs->o_U);
+    exactUVW(mesh->Nlocal, nrs->fieldOffset, time, mesh->o_x, mesh->o_y, mesh->o_z, nrs->o_U);
   }
 
   auto o_Uexact = platform->o_mempool.slice0;
-  exactUVWKernel(mesh->Nlocal, nrs->fieldOffset, time, mesh->o_x, mesh->o_y, mesh->o_z, o_Uexact);
+  exactUVW(mesh->Nlocal, nrs->fieldOffset, time, mesh->o_x, mesh->o_y, mesh->o_z, o_Uexact);
 
   platform->linAlg->axpbyMany(mesh->Nlocal,
     nrs->NVfields,

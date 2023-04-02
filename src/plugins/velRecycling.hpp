@@ -7,7 +7,7 @@
 
    Note: This implementation relies on a special global element
          numbering which is only true for extruded meshes in z from nek!
- */
+*/
 
 #include "nrs.hpp"
 #include "nekInterfaceAdapter.hpp"

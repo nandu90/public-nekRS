@@ -152,10 +152,10 @@ void updateInterpPoints(nrs_t *nrs)
   // add points (use GPU version)
   for (dlong sess = 0; sess < nsessions; ++sess) {
     const auto nPoint = (sess == sessionID) ? 0 : neknek->npt;
-    sessionInterpolators[sess]->addPoints(nPoint, neknek->o_x, neknek->o_y, neknek->o_z);
+    sessionInterpolators[sess]->setPoints(nPoint, neknek->o_x, neknek->o_y, neknek->o_z);
   }
 
-  neknek->interpolator->addPoints(neknek->npt, neknek->o_x, neknek->o_y, neknek->o_z);
+  neknek->interpolator->setPoints(neknek->npt, neknek->o_x, neknek->o_y, neknek->o_z);
 
   const auto warningLevel = pointInterpolation_t::VerbosityLevel::Detailed;
   for (dlong sess = 0; sess < nsessions; ++sess) {
@@ -265,10 +265,10 @@ void findInterpPoints(nrs_t *nrs)
   // add points
   for (dlong sess = 0; sess < nsessions; ++sess) {
     const auto nPoint = (sess == sessionID) ? 0 : numPoints;
-    sessionInterpolators[sess]->addPoints(nPoint, neknekX.data(), neknekY.data(), neknekZ.data());
+    sessionInterpolators[sess]->setPoints(nPoint, neknekX.data(), neknekY.data(), neknekZ.data());
   }
 
-  neknek->interpolator->addPoints(numPoints, neknekX.data(), neknekY.data(), neknekZ.data());
+  neknek->interpolator->setPoints(numPoints, neknekX.data(), neknekY.data(), neknekZ.data());
 
   const auto warningLevel = pointInterpolation_t::VerbosityLevel::Detailed;
   for (dlong sess = 0; sess < nsessions; ++sess) {
@@ -376,9 +376,11 @@ neknek_t::neknek_t(nrs_t *nrs, const session_data_t &session)
   }
 
   this->nEXT = 1;
-  platform->options.setArgs("NEKNEK BOUNDARY EXT ORDER", std::to_string(this->nEXT));
   if(!platform->options.getArgs("NEKNEK BOUNDARY EXT ORDER").empty())
     platform->options.getArgs("NEKNEK BOUNDARY EXT ORDER", this->nEXT);
+
+  // set boundary ext order to report to user, if not specified
+  platform->options.setArgs("NEKNEK BOUNDARY EXT ORDER", std::to_string(this->nEXT));
 
   this->coeffEXT.resize(this->nEXT);
   this->o_coeffEXT = platform->device.malloc(this->nEXT * sizeof(dfloat));

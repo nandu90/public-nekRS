@@ -75,6 +75,7 @@ void remapUnalignedBoundaries(mesh_t *mesh);
 bool unalignedMixedBoundary(std::string field);
 void deriveMeshBoundaryConditions(std::vector<std::string> velocityBCs);
 bool useDerivedMeshBoundaryConditions();
+void addKernelConstants(occa::properties &kernelInfo);
 }
 
 #endif

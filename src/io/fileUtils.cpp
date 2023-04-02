@@ -55,18 +55,7 @@ void fileBcast(const fs::path &srcPathIn,
   int rank;
   MPI_Comm_rank(comm, &rank);
 
-  if(rank == 0) {
-    nrsCheck( !fs::exists(srcPathIn), MPI_COMM_SELF, EXIT_FAILURE, 
-             "Cannot find %s!\n", std::string(srcPathIn).c_str());
-  }
-
   const auto path0 = fs::current_path();
-  auto srcPath = srcPathIn;
-  if(srcPathIn.is_absolute()) {
-    fs::current_path(srcPathIn.parent_path()); 
-    srcPath = fs::relative(srcPathIn, fs::current_path());
-  }
-
 
   int localRank;
   const int localRankRoot = 0;
@@ -89,17 +78,29 @@ void fileBcast(const fs::path &srcPathIn,
       MPI_Comm_rank(commNode, &nodeRank);
   }
 
+
   std::vector<std::string> fileList;
   if (nodeRank == nodeRankRoot) {
+
+    nrsCheck(!fs::exists(srcPathIn), MPI_COMM_SELF, EXIT_FAILURE, 
+             "Cannot find %s!\n", std::string(srcPathIn).c_str());
+
+    const auto srcPathCanonical = fs::canonical(srcPathIn);
+    fs::current_path(srcPathCanonical.parent_path()); 
+    const auto srcPath = fs::relative(srcPathCanonical, fs::current_path());
+
     if (!fs::is_directory((srcPath))) {
       fileList.push_back(srcPath);
     } else {
-      for (const auto &dirEntry : fs::recursive_directory_iterator(srcPath)) {
-        if (dirEntry.is_regular_file())
-          fileList.push_back(dirEntry.path());
+      for (const auto &entry : fs::recursive_directory_iterator(srcPath)) {
+        if (entry.is_regular_file() || entry.is_symlink()) {
+          fileList.push_back(entry.path());
+        }
       }
     }
+
   }
+  int maxFileSize = 0;
   int nFiles = (nodeRank == nodeRankRoot) ? fileList.size() : 0;
   MPI_Bcast(&nFiles, 1, MPI_INT, nodeRankRoot, comm);
 
@@ -108,15 +109,26 @@ void fileBcast(const fs::path &srcPathIn,
     MPI_Bcast(&bufSize, 1, MPI_INT, nodeRankRoot, comm);
 
     auto buf = (char *)std::malloc(bufSize * sizeof(char));
-    if (nodeRank == nodeRankRoot)
+    if (nodeRank == nodeRankRoot) {
       std::strncpy(buf, fileList.at(i).c_str(), bufSize);
+      auto fileSize = fs::file_size(fileList.at(i));
+      nrsCheck(fileSize > std::numeric_limits<int>::max(),
+               MPI_COMM_SELF, EXIT_FAILURE,
+               "%s\n", "File size too large!");
+      maxFileSize = std::max(maxFileSize, static_cast<int>(fileSize));
+    }
     MPI_Bcast(buf, bufSize, MPI_CHAR, nodeRankRoot, comm);
     if (nodeRank != nodeRankRoot)
       fileList.push_back(std::string(buf, 0, bufSize));
     free(buf);
   }
 
-  auto fileBuf = (char *) std::malloc(2<<23 * sizeof(char)); 
+  MPI_Bcast(&maxFileSize, 1, MPI_INT, nodeRankRoot, comm);
+  printf("maxFileSize: %d\n", maxFileSize);
+
+  auto fileBuf = (char *) std::malloc(maxFileSize * sizeof(char)); 
+  nrsCheck(fileBuf == nullptr, MPI_COMM_SELF, 
+           EXIT_FAILURE, "%s\n", "allocating file buffer failed!");
 
   // sweep through list and transfer to nodes 
   for (const auto &file : fileList) {
@@ -127,22 +139,16 @@ void fileBcast(const fs::path &srcPathIn,
       if (nodeRank == nodeRankRoot)
         bufSize = fs::file_size(file);
       MPI_Bcast(&bufSize, 1, MPI_INT, nodeRankRoot, commNode);
-      nrsCheck(bufSize > std::numeric_limits<int>::max(),
-               MPI_COMM_SELF, EXIT_FAILURE,
-               "%s\n", "Maximum File size buffer reached!");
-
-      fileBuf = (char *) std::realloc(fileBuf, bufSize * sizeof(char));
 
       if (nodeRank == nodeRankRoot) {
         std::ifstream input(file, std::ifstream::binary);
         input.read(fileBuf, bufSize);
         input.close();
       }
-      MPI_Bcast(fileBuf, bufSize, MPI_BYTE, nodeRankRoot, commNode);
+      MPI_Bcast(fileBuf, bufSize, MPI_CHAR, nodeRankRoot, commNode);
 
       if (nodeRank == nodeRankRoot && verbose)
-        std::cout << __func__ << ": " << file << " -> " << filePath << " (" << bufSize << " bytes)"
-                  << std::endl;
+        std::cout << __func__ << ": " << file << " -> " << std::flush;
     }
 
     // write file collectively to node-local storage;
@@ -175,6 +181,12 @@ void fileBcast(const fs::path &srcPathIn,
     if (localRank == localRankRoot) {
       fileSync(filePath.c_str());
       fs::permissions(filePath, fs::perms::owner_all);
+    }
+
+    if (commNode != MPI_COMM_NULL) {
+      if (nodeRank == nodeRankRoot && verbose) {
+        std::cout << fs::canonical(filePath) << " (" << bufSize << " bytes)" << std::endl;
+      }
     }
   }
 

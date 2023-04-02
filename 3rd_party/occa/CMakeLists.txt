@@ -110,7 +110,6 @@ if(ENABLE_OPENMP)
 
   if(OPENMP_CXX_FOUND)
     set(OCCA_OPENMP_ENABLED 1)
-    set(OCCA_OPENMP_ENABLED 1 PARENT_SCOPE)
 
     message("-- OpenMP include dirs: ${OpenMP_CXX_INCLUDE_DIRS}")
     message("-- OpenMP libraries:    ${OpenMP_CXX_LIBRARIES}")
@@ -120,8 +119,9 @@ if(ENABLE_OPENMP)
     target_link_libraries(libocca PRIVATE OpenMP::OpenMP_CXX)
   else(OPENMP_CXX_FOUND)
     set(OCCA_OPENMP_ENABLED 0)
-    set(OCCA_OPENMP_ENABLED 0 PARENT_SCOPE)
   endif(OPENMP_CXX_FOUND)
+
+  set(OCCA_OPENMP_ENABLED ${OCCA_OPENMP_ENABLED} PARENT_SCOPE)
 endif(ENABLE_OPENMP)
 #=======================================
 
@@ -131,7 +131,6 @@ if(ENABLE_CUDA)
 
   if(CUDAToolkit_FOUND)
     set(OCCA_CUDA_ENABLED 1)
-    set(OCCA_CUDA_ENABLED 1 PARENT_SCOPE)
 
     message("-- CUDA include dirs: ${CUDAToolkit_INCLUDE_DIRS}")
     message("-- CUDA driver library: ${CUDAToolkit_LIBRARY_DIR}")
@@ -141,8 +140,9 @@ if(ENABLE_CUDA)
 
   else (CUDAToolkit_FOUND)
     set(OCCA_CUDA_ENABLED 0)
-    set(OCCA_CUDA_ENABLED 0 PARENT_SCOPE)
   endif(CUDAToolkit_FOUND)
+
+  set(OCCA_CUDA_ENABLED ${OCCA_CUDA_ENABLED} PARENT_SCOPE)
 endif(ENABLE_CUDA)
 #=======================================
 
@@ -152,7 +152,6 @@ if(ENABLE_OPENCL)
 
   if(OpenCL_FOUND)
     set(OCCA_OPENCL_ENABLED 1)
-    set(OCCA_OPENCL_ENABLED 1 PARENT_SCOPE)
 
     message("-- OpenCL include dirs: ${OpenCL_INCLUDE_DIRS}")
     message("-- OpenCL libraries:    ${OpenCL_LIBRARIES}")
@@ -162,8 +161,9 @@ if(ENABLE_OPENCL)
     target_link_libraries(libocca PRIVATE OpenCL::OpenCL)
   else (OpenCL_FOUND)
     set(OCCA_OPENCL_ENABLED 0)
-    set(OCCA_OPENCL_ENABLED 0 PARENT_SCOPE)
   endif(OpenCL_FOUND)
+
+  set(OCCA_OPENCL_ENABLED ${OCCA_OPENCL_ENABLED} PARENT_SCOPE)
 endif(ENABLE_OPENCL)
 #=======================================
 
@@ -173,7 +173,6 @@ if(ENABLE_DPCPP)
 
   if(DPCPP_FOUND)
     set(OCCA_DPCPP_ENABLED 1)
-    set(OCCA_DPCPP_ENABLED 1 PARENT_SCOPE)
 
     message("-- DPCPP flags: ${SYCL_FLAGS}")
     message("-- DPCPP include dirs: ${SYCL_INCLUDE_DIRS}")
@@ -184,8 +183,9 @@ if(ENABLE_DPCPP)
     target_link_libraries(libocca PRIVATE OCCA::depends::DPCPP)
   else()
     set(OCCA_DPCPP_ENABLED 0)
-    set(OCCA_DPCPP_ENABLED 0 PARENT_SCOPE)
   endif()
+
+  set(OCCA_DPCPP_ENABLED ${OCCA_DPCPP_ENABLED} PARENT_SCOPE)
 endif(ENABLE_DPCPP)
 #=======================================
 
@@ -195,20 +195,20 @@ if(ENABLE_HIP)
 
   if(HIP_FOUND)
     set(OCCA_HIP_ENABLED 1)
-    set(OCCA_HIP_ENABLED 1 PARENT_SCOPE)
 
     message("-- HIP version:      ${HIP_VERSION_STRING}")
     message("-- HIP platform:     ${HIP_PLATFORM}")
     message("-- HIP include dirs: ${HIP_INCLUDE_DIRS}")
     message("-- HIP libraries:    ${HIP_LIBRARIES}")
 
-    # Use our wrapper imported target OCCA::depends::DPCPP,
+    # Use our wrapper imported target OCCA::depends::HIP,
     # (which wraps the _COMPILE_DEFINITIONS, _INCLUDE_DIRS and _LIBRARIES,) to make our package relocatable
     target_link_libraries(libocca PRIVATE OCCA::depends::HIP)
   else (HIP_FOUND)
     set(OCCA_HIP_ENABLED 0)
-    set(OCCA_HIP_ENABLED 0 PARENT_SCOPE)
   endif(HIP_FOUND)
+
+  set(OCCA_HIP_ENABLED ${OCCA_HIP_ENABLED} PARENT_SCOPE)
 endif(ENABLE_HIP)
 #=======================================
 
@@ -218,19 +218,19 @@ if(ENABLE_METAL AND APPLE)
 
   if(METAL_FOUND)
     set(OCCA_METAL_ENABLED 1)
-    set(OCCA_METAL_ENABLED 1 PARENT_SCOPE)
 
     message("-- METAL libraries:     ${METAL_LIBRARY}")
     message("-- METAL core services: ${CORE_SERVICES}")
     message("-- METAL app kit:       ${APP_KIT}")
 
-    # Use our wrapper imported target OCCA::depends::DPCPP,
+    # Use our wrapper imported target OCCA::depends::METAL,
     # (which wraps the three libraries variables,) to make our package relocatable
     target_link_libraries(libocca PRIVATE OCCA::depends::METAL)
   else()
     set(OCCA_METAL_ENABLED 0)
-    set(OCCA_METAL_ENABLED 0 PARENT_SCOPE)
   endif()
+
+  set(OCCA_METAL_ENABLED ${OCCA_METAL_ENABLED} PARENT_SCOPE)
 endif()
 #=======================================
 
@@ -291,3 +291,11 @@ add_subdirectory(bin)
 
 # Create a package config and associated files.
 include(ExportAndPackageConfig)
+
+install(CODE
+  "configure_file(
+    ${OCCA_SOURCE_DIR}/modulefiles/occa
+    ${CMAKE_INSTALL_PREFIX}/modulefiles/occa
+    @ONLY
+  )"
+)

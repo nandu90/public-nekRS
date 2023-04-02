@@ -6,7 +6,7 @@
 
 static int ciMode = 0;
 
-#define EPS 4e-2
+#define EPS 4e-3
 
 void ciSetup(MPI_Comm comm, setupAide &options)
 {
@@ -69,7 +69,7 @@ void ciTestErrors(nrs_t *nrs, dfloat time, int tstep)
   // https://turbulence.oden.utexas.edu/channel2015/data/LM_Channel_2000_mean_prof.dat
   const auto utauRef = 4.58794e-02; 
   const auto utau = sqrt(drag/areaWall.at(0));
-  const auto utauErr = (utau - utauRef)/utauRef;
+  const auto utauErr = std::abs((utau - utauRef)/utauRef);
   
   if(platform->comm.mpiRank == 0){
     printf("tau: %g; relative error = %g\n",utau,utauErr);

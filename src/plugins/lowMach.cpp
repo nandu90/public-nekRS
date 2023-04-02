@@ -11,14 +11,18 @@
 
 namespace {
 
-static nrs_t *the_nrs = nullptr;
-static linAlg_t *the_linAlg = nullptr;
-static int qThermal = 0;
-static dfloat gamma0 = 1;
-static occa::kernel qtlKernel;
-static occa::kernel p0thHelperKernel;
-static occa::kernel surfaceFluxKernel;
+nrs_t *the_nrs = nullptr;
+linAlg_t *the_linAlg = nullptr;
 
+int qThermal = 0;
+dfloat alpha0 = 1.0;
+
+occa::memory o_beta;
+occa::memory o_kappa;
+
+occa::kernel qtlKernel;
+occa::kernel p0thHelperKernel;
+occa::kernel surfaceFluxKernel;
 } // namespace
 
 void lowMach::buildKernel(occa::properties kernelInfo)
@@ -36,15 +40,6 @@ void lowMach::buildKernel(occa::properties kernelInfo)
     fileName = path + kernelName + extension;
     p0thHelperKernel = platform->device.buildKernel(fileName, kernelInfo, true);
 
-    {
-      int N;
-      platform->options.getArgs("POLYNOMIAL DEGREE", N);
-      const int Nq = N + 1;
-      nrsCheck(BLOCKSIZE < Nq * Nq, platform->comm.mpiComm, EXIT_FAILURE,
-               "surfaceFlux kernel requires BLOCKSIZE >= Nq * Nq\nBLOCKSIZE = %d, Nq*Nq = %d\n",
-                 BLOCKSIZE, Nq * Nq);
-    }
-
     kernelName = "surfaceFlux";
     fileName = path + kernelName + extension;
     surfaceFluxKernel = platform->device.buildKernel(fileName, kernelInfo, true);
@@ -53,24 +48,27 @@ void lowMach::buildKernel(occa::properties kernelInfo)
   platform->options.setArgs("PRESSURE ELLIPTIC COEFF FIELD", "TRUE");
 }
 
-void lowMach::setup(nrs_t *nrs, dfloat gamma)
+void lowMach::setup(nrs_t *nrs, dfloat alpha_, occa::memory& o_beta_, occa::memory& o_kappa_)
 {
   the_nrs = nrs;
-  gamma0 = gamma;
+
+  alpha0 = alpha_;
+  o_beta = o_beta_;
+  o_kappa = o_kappa_;
+
   the_linAlg = platform->linAlg;
   mesh_t *mesh = nrs->meshV;
   int err = 1;
   if (platform->options.compareArgs("SCALAR00 IS TEMPERATURE", "TRUE"))
     err = 0;
-  
+
   nrsCheck(err, platform->comm.mpiComm, EXIT_FAILURE,
            "requires solving for temperature!\n", "");
 
   platform->options.setArgs("LOWMACH", "TRUE");
 }
 
-// qtl = 1/(rho*cp*T) * (div[k*grad[T] ] + qvol)
-void lowMach::qThermalIdealGasSingleComponent(dfloat time, occa::memory o_div)
+void lowMach::qThermalSingleComponent(dfloat time, occa::memory& o_div)
 {
   qThermal = 1;
   nrs_t *nrs = the_nrs;
@@ -105,7 +103,7 @@ void lowMach::qThermalIdealGasSingleComponent(dfloat time, occa::memory o_div)
             mesh->o_D,
             nrs->fieldOffset,
             platform->o_mempool.slice0,
-            cds->o_S,
+            o_beta,
             cds->o_diff,
             cds->o_rho,
             platform->o_mempool.slice3,
@@ -121,7 +119,7 @@ void lowMach::qThermalIdealGasSingleComponent(dfloat time, occa::memory o_div)
   double surfaceFlops = 0.0;
 
   if (nrs->pSolver->allNeumann) {
-    const dfloat dd = (1.0 - gamma0) / gamma0;
+
     const dlong Nlocal = mesh->Nlocal;
 
     linAlg->axmyz(Nlocal, 1.0, mesh->o_LMM, o_div, platform->o_mempool.slice0);
@@ -145,9 +143,11 @@ void lowMach::qThermalIdealGasSingleComponent(dfloat time, occa::memory o_div)
     MPI_Allreduce(MPI_IN_PLACE, &termV, 1, MPI_DFLOAT, MPI_SUM, platform->comm.mpiComm);
 
     p0thHelperKernel(Nlocal,
-                     dd,
+                     alpha0,
+                     nrs->p0th[0],
+                     o_beta,
+                     o_kappa,
                      cds->o_rho,
-                     nrs->o_rho,
                      nrs->meshV->o_LMM,
                      platform->o_mempool.slice0,
                      platform->o_mempool.slice1);
@@ -170,16 +170,19 @@ void lowMach::qThermalIdealGasSingleComponent(dfloat time, occa::memory o_div)
 
     surfaceFlops += surfaceFluxFlops + p0thHelperFlops;
   }
+
   qThermal = 0;
 
   double flops = surfaceFlops + flopsGrad + flopsQTL;
-  platform->flopCounter->add("lowMach::qThermalIdealGasSingleComponent", flops);
+  platform->flopCounter->add("lowMach::qThermalRealGasSingleComponent", flops);
 }
 
-void lowMach::dpdt(occa::memory o_FU)
+void lowMach::dpdt(occa::memory& o_FU)
 {
   nrs_t *nrs = the_nrs;
   mesh_t *mesh = nrs->meshV;
-  if (!qThermal)
-    platform->linAlg->add(mesh->Nlocal, nrs->dp0thdt * (gamma0 - 1.0) / gamma0, o_FU);
+
+  if (!qThermal) {
+    platform->linAlg->add(mesh->Nlocal, nrs->dp0thdt * alpha0, o_FU);
+  }
 }
