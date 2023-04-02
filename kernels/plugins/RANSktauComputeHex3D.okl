@@ -139,7 +139,7 @@
           const dfloat S_w0 = -rho * sigd *xk;
           const dfloat G_wp = rho * p_alp_inf * tau * 2*stMag2;
 
-          const dfloat S_tau = fmin(8.0 * mue * xtq, 4.0 * p_beta0 / 3.0);
+          const dfloat S_tau = fmin(8.0 * mue * xtq, 8.0 * p_beta0 / 3.0);
           const dfloat S_taup = 8.0 * rho * p_alpinf_str * kk * xtq * p_sigma_tau;	  
 
           dfloat tauSrc = 0.0;
